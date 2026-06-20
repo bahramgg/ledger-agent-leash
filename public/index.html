@@ -73,7 +73,10 @@
   .slogan .q{ font-weight:500; font-size:clamp(17px,4.4vw,21px); letter-spacing:-.02em; transition:opacity .5s ease; }
   .credit{ font-family:var(--mono); font-size:12px; color:var(--faint); margin-top:8px; letter-spacing:.04em; }
   .lead{ margin:22px auto 0; max-width:430px; color:var(--muted); font-size:15px; letter-spacing:-.01em; }
-  .scroll-cue{ margin-top:34px; }
+  .scroll-cue{ margin-top:44px; }
+  /* supporting intro text, moved below the hero fold so the first screen stays clean */
+  #intro-more{ text-align:center; padding:24px 20px 8px; }
+  #intro-more .more-inner{ max-width:560px; margin:0 auto; }
   .enter{ font-weight:600; font-size:15px; letter-spacing:-.01em; background:var(--text); color:#000; border:none; border-radius:12px; padding:14px 26px; cursor:pointer; transition:transform .08s ease, box-shadow .25s ease; display:inline-flex; align-items:center; gap:10px; font-family:var(--disp); }
   .enter:hover{ box-shadow:0 8px 30px rgba(212,160,255,.25); } .enter:active{ transform:translateY(1px); }
   .enter .arr{ animation:bob 1.6s ease-in-out infinite; } @keyframes bob{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(3px)} }
@@ -247,9 +250,15 @@
     </div>
     <h1 class="fade d1">The agent does the work.<br><span class="accent">The device has the final say.</span></h1>
     <div class="credit fade d2">— Ledger</div>
+    <div class="scroll-cue fade d5"><button class="enter" id="enterBtn">See the leash in action <span class="arr">↓</span></button></div>
+  </div>
+</section>
+
+<!-- ===== SUPPORTING INTRO (below the hero fold) ===== -->
+<section id="intro-more">
+  <div class="more-inner">
     <div class="slogan fade d3"><span class="q" id="slogan">Intelligence scales. Control stays.</span></div>
     <p class="lead fade d4">An AI agent can propose transactions all day. But a fixed policy decides, and your hardware device signs, so even a hijacked agent can't move your funds.</p>
-    <div class="scroll-cue fade d5"><button class="enter" id="enterBtn">See the leash in action <span class="arr">↓</span></button></div>
   </div>
 </section>
 
