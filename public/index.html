@@ -205,8 +205,8 @@
 
   /* ============ LAPTOP DASHBOARD ============ */
   /* Wide screens: widen the column and lay the demo out as a two-column
-     dashboard — the stage visual, demo buttons and verdict on the left, the
-     controls (policy + transaction cards) on the right — so the page is wide
+     dashboard. The stage visual, demo buttons and verdict go on the left, the
+     controls (policy + transaction cards) on the right, so the page is wide
      and balanced instead of a thin centered strip. Named grid areas let the
      columns be arranged independently of source order. Below 900px everything
      falls back to the single stacked column defined above. */
@@ -248,7 +248,7 @@
     <h1 class="fade d1">The agent does the work.<br><span class="accent">The device has the final say.</span></h1>
     <div class="credit fade d2">— Ledger</div>
     <div class="slogan fade d3"><span class="q" id="slogan">Intelligence scales. Control stays.</span></div>
-    <p class="lead fade d4">An AI agent can propose transactions all day. But a fixed policy decides, and your hardware device signs — so even a hijacked agent can't move your funds.</p>
+    <p class="lead fade d4">An AI agent can propose transactions all day. But a fixed policy decides, and your hardware device signs, so even a hijacked agent can't move your funds.</p>
     <div class="scroll-cue fade d5"><button class="enter" id="enterBtn">See the leash in action <span class="arr">↓</span></button></div>
   </div>
 </section>
@@ -259,7 +259,7 @@
     <div class="sec-head">
       <span class="eyebrow"><span class="bk">[</span> live demonstration <span class="bk">]</span></span>
       <h2>Hijack the agent.<br>Watch the leash hold.</h2>
-      <p class="sub">An attacker hides a malicious instruction in data the agent reads. Launch it and watch exactly what reaches the device — and why.</p>
+      <p class="sub">An attacker hides a malicious instruction in data the agent reads. Launch it and watch exactly what reaches the device, and why.</p>
     </div>
 
     <div class="stage">
@@ -283,7 +283,7 @@
       <div class="panel">
         <div class="ptag"><span>transaction requested</span><span class="src" id="txSrc">agent</span></div>
         <div class="tx-amount"><span class="a" id="txAmt">0.00</span><span class="u">SOL</span></div>
-        <div class="tx-to"><span class="k">to</span><span class="v" id="txTo">—</span></div>
+        <div class="tx-to"><span class="k">to</span><span class="v" id="txTo"></span></div>
       </div>
 
       <div class="panel">
@@ -293,7 +293,7 @@
 
       <div class="verdict" id="verdict">
         <div class="v-tag" id="vTag">verdict</div>
-        <div class="v-big" id="vBig">—</div>
+        <div class="v-big" id="vBig"></div>
         <div class="v-explain" id="vExplain"></div>
         <div class="v-sig" id="vSig" hidden>
           <div class="vk">device signature <span class="badge" id="vSigBadge"></span></div>
@@ -376,7 +376,7 @@
   function renderScore(){ $("nBlocked").textContent=score.blocked; $("nLost").textContent=score.stolen.toFixed(2); $("statLost").classList.toggle("hot", score.stolen>0); }
 
   /* REAL engine: POST the transaction + policy to the backend (src/policy.ts).
-     The browser no longer decides anything — it just renders the server's verdict. */
+     The browser no longer decides anything. It just renders the server's verdict. */
   function postRun(payload){
     return fetch("/api/run", {
       method:"POST",
@@ -487,7 +487,7 @@
         AN.classList.add("breach"); DV.classList.add("breach"); DS.textContent="SIGNED";
         score.stolen+=amount; renderScore();
         setVerdict("bad","breach","Funds stolen",
-          amount+" SOL is within your cap and this address is on your allowlist — so the hijacked agent got it signed. A tighter policy is what stops this.");
+          amount+" SOL is within your cap and this address is on your allowlist, so the hijacked agent got it signed. A tighter policy is what stops this.");
       } else {
         T.classList.add("pulse"); await sleep(reduced?0:560);
         T.classList.add("held"); AN.classList.add("lock"); DV.classList.add("lock"); DS.textContent="SIGNED";
@@ -510,7 +510,7 @@
       var why = reasons.join(" and ");
       if(compromised){
         setVerdict("good","attack defeated","Brain compromised. Hands bound.",
-          "The agent was hijacked, but "+why+" — so the policy refused it and the device never saw the transaction.");
+          "The agent was hijacked, but "+why+", so the policy refused it and the device never saw the transaction.");
       } else {
         setVerdict("bad","refused","Blocked by your policy",
           "This transaction was refused because "+why+". Adjust your policy or the transaction to allow it.");
