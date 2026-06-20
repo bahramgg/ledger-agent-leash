@@ -1,98 +1,116 @@
 # Running against a real Speculos device
 
-By default the demo runs with a **mock signer** (`USE_MOCK_SIGNER=true`) so it
-works anywhere. This guide shows how to run the *same* code against
+By default the demo uses a **mock signer** (`USE_MOCK_SIGNER=true`) so it runs
+anywhere. This guide shows how to run the *same* code against
 [Speculos](https://github.com/LedgerHQ/speculos), Ledger's official device
-emulator, so the signer talks to an emulated Ledger running the real Solana app.
+emulator, so the signer (`src/signer/speculos-signer.ts`) returns a **real
+ed25519 signature** from the emulated Solana app over the DMK Speculos transport.
 
 > Speculos is an emulator — a faithful stand-in for a physical Ledger so you can
 > run without hardware. It is not a substitute for a real secure element in
 > production.
 
-## Prerequisites
+The signer connects to Speculos' HTTP API at `SPECULOS_API_URL`
+(default `http://localhost:5000`). The DMK Speculos transport posts APDUs to
+`POST /apdu` and watches `GET /events` — exactly what Speculos serves.
 
-- [Docker](https://docs.docker.com/get-docker/) installed and running.
-- This repo set up: `npm install`.
+## Step 0 — Get a Solana app ELF
 
-## 1. Start Speculos with the Solana app
+Speculos runs a real app binary. Put a Solana app ELF at `apps/app.elf`. ELFs are
+build artifacts and are git-ignored; see [`apps/README.md`](../apps/README.md) for
+how to build one with Ledger's app builder. Match the build SDK to the device
+model you'll emulate (default here: `nanosp`).
 
-The simplest path is the official Docker image, which exposes Speculos' HTTP/APDU
-endpoint on port `5000`.
+## Step 1 — Start Speculos
+
+Two equivalent options. Both expose the API on port 5000.
+
+### Option A — pip (used by the npm script)
 
 ```bash
-docker run --rm -it \
-  -p 5000:5000 \
-  ghcr.io/ledgerhq/speculos \
-  --model nanosp \
-  --display headless \
-  --api-port 5000 \
-  /speculos/apps/solana.elf
+pip install speculos          # one-time; provides the `speculos` command
+npm run speculos:start        # → speculos --model nanosp --display headless \
+                              #     --api-port 5000 --automation file:speculos/automation.json apps/app.elf
 ```
 
-Notes:
+Overridable via env: `SPECULOS_MODEL` (nanosp|nanox|stax|flex), `SPECULOS_API_PORT`
+(default 5000), `SPECULOS_APP` (default `apps/app.elf`).
 
-- `-p 5000:5000` maps the container's API port to `http://localhost:5000`, which
-  is exactly where this project's Speculos transport connects.
-- `--display headless` runs without a GUI window and is ideal for screen
-  recording or CI; drop it (and add the appropriate X11/VNC flags) if you want
-  to watch the device screen.
-- `--model nanosp` selects a Nano S+. Other values: `nanox`, `stax`, `flex`.
-- `/speculos/apps/solana.elf` is the Solana app inside the image. If your image
-  ships the apps elsewhere, or you want a specific version, mount your own app
-  build and point to it:
-  `-v $PWD/apps:/apps ... /apps/solana.elf`. App builds come from
-  [LedgerHQ/app-solana](https://github.com/LedgerHQ/app-solana).
-
-You can confirm Speculos is up by checking that something answers on the API
-port (for example, `curl http://localhost:5000/events` returns a stream).
-
-## 2. Point the project at Speculos
-
-The Speculos URL is read from the environment (defaults to
-`http://localhost:5000`). Copy the example env file if you haven't already:
+### Option B — Docker
 
 ```bash
-cp .env.example .env
+docker pull ghcr.io/ledgerhq/speculos:latest
+docker run --rm -it -p 5000:5000 \
+  -v "$(realpath apps):/apps" \
+  ghcr.io/ledgerhq/speculos:latest \
+  --model nanosp --display headless --api-port 5000 \
+  --automation file:/apps/automation.json /apps/app.elf
 ```
 
-Relevant settings in `.env`:
+(Copy `speculos/automation.json` into `apps/` if you use this mount, or adjust the
+path.)
+
+Confirm it's up: `curl http://localhost:5000/events` should hold open an event
+stream.
+
+### Unattended approval (automation)
+
+Reading an address (`checkOnDevice=false`, the default) needs no button press. But
+**signing requires approving on the device screen.** `speculos/automation.json`
+drives the buttons for you — it navigates right and presses both buttons on any
+"approve / sign / confirm" screen. Screen wording varies by app version, so if a
+signature stalls, tweak the regexps there. (The `@ledgerhq/speculos-device-controller`
+dependency can drive the device programmatically too, if you want finer control.)
+
+## Step 2 — Point the app at Speculos
 
 ```bash
-USE_MOCK_SIGNER=false          # use the real Speculos-backed signer
+cp .env.example .env   # if you haven't already
+```
+
+```bash
+# .env
+USE_MOCK_SIGNER=false                         # use the real Speculos-backed signer
 SPECULOS_API_URL=http://localhost:5000
-SOLANA_RPC_URL=https://api.devnet.solana.com   # devnet only
+SOLANA_RPC_URL=https://api.devnet.solana.com  # devnet only
 ```
 
-## 3. Run a scenario against the device
+## Step 3 — Run end-to-end
 
-With Speculos running and `USE_MOCK_SIGNER=false` (or simply unset):
+With Speculos running and `USE_MOCK_SIGNER=false`:
 
 ```bash
+# CLI
 npm run demo -- --scenario safe
+
+# Web dashboard
+npm run web        # open http://localhost:3000, run a safe transfer
 ```
 
-The trace will read `signer  Speculos device` instead of `MOCK (simulated)`, and
-the address and signature now come from the emulated Ledger rather than the mock.
+On an ALLOWED transfer the response/trace shows `signer: Speculos device` and a
+real base58 signature produced by the emulated Ledger. On a BLOCKED transfer the
+leash refuses first, so the device is never asked to sign.
 
-The `over-limit` and `attack` scenarios behave identically with the real signer —
-because they are **blocked by the leash before the signer is ever called**, the
-device is never even asked to sign. That is the whole point.
-
-## Optional: automating on-device confirmation
-
-Reading an address with `CHECK_ADDRESS_ON_DEVICE=true`, and signing, require a
-button press on the device screen. Speculos can be driven programmatically (its
-API accepts button events and serves screenshots), and the
-`@ledgerhq/speculos-device-controller` package — already a dependency — is built
-for exactly this. Wiring automated approval into the signing flow is a natural
-next step for an end-to-end, hands-free recording.
+`POST /api/run` returns `signerKind: "speculos"` and a real `signature` whenever
+the leash approves.
 
 ## Troubleshooting
 
 - **`Could not reach Speculos at http://localhost:5000`** — Speculos isn't
   running, the port isn't mapped, or `SPECULOS_API_URL` points elsewhere.
-- **Connects but signing/app errors** — make sure the app you launched is the
-  **Solana** app; this project derives `44'/501'/0'/0'` and uses the Solana
-  signer kit.
-- **Port already in use** — map a different host port (e.g. `-p 5050:5000`) and
-  set `SPECULOS_API_URL=http://localhost:5050`.
+- **Signature hangs** — the automation didn't match the approval screen; adjust
+  `speculos/automation.json` regexps to the app's wording.
+- **App/CLA errors on signing** — the running app isn't the **Solana** app, or the
+  ELF was built for a different model than `SPECULOS_MODEL`.
+- **Port already in use** — pass `SPECULOS_API_PORT=5050` and set
+  `SPECULOS_API_URL=http://localhost:5050`.
+
+## Note on this project's cloud sandbox
+
+The hosted build environment for this repo cannot run Speculos with the Solana
+app: container registries' blob CDNs are blocked / rate-limited (no image pull),
+and the app builder image needed to compile an ELF is likewise unreachable. The
+emulator engine installs fine via pip, but without a Solana ELF it can't emulate
+the Solana app. So in the sandbox the web demo uses the mock signer; a **real**
+Speculos signature is produced on a local machine (or any host with Docker + an
+ELF) using the steps above. See `DEPLOY.md` for how this affects deployment.

@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "comment": "Auto-approve automation for unattended signing in the demo. Speculos presses the device buttons for us: navigate with the right button, confirm on any approve/sign screen by pressing both buttons. Screen wording varies by app/version, so tweak the regexps if a signature stalls.",
+  "rules": [
+    {
+      "regexp": "(?i)(approve|sign|accept|confirm|hold to)",
+      "actions": [
+        ["button", 1, true],
+        ["button", 2, true],
+        ["button", 1, false],
+        ["button", 2, false]
+      ]
+    },
+    {
+      "regexp": "(?i)(reject|deny|cancel)",
+      "actions": []
+    },
+    {
+      "text": "",
+      "actions": [
+        ["button", 2, true],
+        ["button", 2, false]
+      ]
+    }
+  ]
+}

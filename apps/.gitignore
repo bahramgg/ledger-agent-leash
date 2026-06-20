@@ -1,0 +1,2 @@
+# App binaries are build artifacts — never commit them.
+*.elf
