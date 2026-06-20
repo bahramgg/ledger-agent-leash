@@ -7,14 +7,13 @@
   "engines": {
     "node": ">=20"
   },
-  "main": "dist/index.js",
+  "main": "dist/agent.cjs",
   "scripts": {
-    "build": "tsc",
+    "build": "esbuild src/index.ts --bundle --platform=node --format=cjs --conditions=import --target=node20 --outfile=dist/agent.cjs --sourcemap",
     "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit",
-    "dev": "tsx src/index.ts",
-    "demo": "tsx src/index.ts",
-    "start": "node dist/index.js"
+    "demo": "npm run build && node --no-deprecation dist/agent.cjs",
+    "start": "node --no-deprecation dist/agent.cjs"
   },
   "keywords": [
     "ledger",
@@ -26,15 +25,16 @@
     "prompt-injection"
   ],
   "dependencies": {
-    "@ledgerhq/device-management-kit": "^0.7.0",
-    "@ledgerhq/device-signer-kit-solana": "^1.1.0",
-    "@ledgerhq/device-transport-kit-speculos": "^1.0.0",
-    "@ledgerhq/speculos-device-controller": "^1.0.0",
-    "dotenv": "^16.4.5"
+    "@ledgerhq/device-management-kit": "^1.7.1",
+    "@ledgerhq/device-signer-kit-solana": "^1.9.1",
+    "@ledgerhq/device-transport-kit-speculos": "^1.2.1",
+    "@ledgerhq/speculos-device-controller": "^0.3.0",
+    "dotenv": "^16.4.5",
+    "rxjs": "7.8.2"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "tsx": "^4.19.0",
+    "esbuild": "^0.24.2",
     "typescript": "^5.6.0"
   }
 }
