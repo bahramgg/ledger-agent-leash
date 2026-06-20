@@ -192,6 +192,17 @@
   footer{ text-align:center; padding:30px 0 36px; }
   footer a{ color:var(--faint); font-family:var(--mono); font-size:11px; letter-spacing:.04em; text-decoration:none; border-bottom:1px dotted var(--faint); }
 
+  /* ============ LAPTOP LAYOUT ============ */
+  /* Wider screens only: pair the two fields inside each composer card 2-up so
+     the page is shorter. Mobile stays one stacked column (rules below 760px). */
+  @media (min-width:760px){
+    .composer .block{ display:grid; grid-template-columns:1fr 1fr; column-gap:16px; align-items:start; }
+    .composer .block > h3,
+    .composer .block > .bn,
+    .composer .block > .run{ grid-column:1 / -1; }
+    .composer .block .field{ margin-bottom:0; }
+  }
+
   @media (prefers-reduced-motion: reduce){ html{ scroll-behavior:auto; } *{ animation:none !important; transition:none !important; } .fade{ opacity:1; transform:none; } #result{ transition:none; } }
 </style>
 </head>
