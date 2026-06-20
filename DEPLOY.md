@@ -53,6 +53,13 @@ simulated signature instead. Either way, nothing is misrepresented.
 
 ## Render
 
+**One-click (Blueprint):** this repo includes [`render.yaml`](render.yaml). In
+Render, choose **New + → Blueprint**, pick this repo, and Render reads the build/
+start commands and env vars for you. Set `SPECULOS_SIGNATURE` when prompted
+(optional), then apply.
+
+**Manual setup instead:**
+
 1. **New → Web Service**, connect this repo.
 2. Settings:
    - **Runtime:** Node
