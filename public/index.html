@@ -97,7 +97,7 @@
 
   .anchor{ position:relative; margin-top:4px; }
   .device{ width:124px; padding:13px 12px 11px; border-radius:12px; border:1px solid var(--line-2); background:#000; text-align:center; transition:border-color .3s ease, box-shadow .3s ease; }
-  .device .screen{ height:30px; border-radius:6px; background:#000; border:1px solid var(--line); display:grid; place-items:center; margin-bottom:8px; font-family:var(--mono); font-size:14px; color:var(--faint); transition:color .3s ease; }
+  .device .screen{ height:30px; border-radius:6px; background:#000; border:1px solid var(--line); display:grid; place-items:center; margin-bottom:8px; font-family:var(--mono); font-size:12px; font-weight:700; letter-spacing:.12em; white-space:nowrap; color:var(--faint); transition:color .3s ease; }
   .device .dlabel{ font-family:var(--mono); font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
   .device.lock{ border-color:var(--green-2); box-shadow:0 0 24px rgba(110,200,92,.18); } .device.lock .screen{ color:var(--green); }
   .device.breach{ border-color:var(--red-2); box-shadow:0 0 24px rgba(255,45,99,.18); } .device.breach .screen{ color:var(--red); }
@@ -226,7 +226,7 @@
       align-items:start;
     }
     #demo .sec-head{ grid-area:head; }
-    #demo .stage{ grid-area:stage; }
+    #demo .stage{ grid-area:stage; margin-top:0; }
     #demo .cta{ grid-area:cta; }
     #demo #result{ grid-area:result; }
     #demo .divider{ grid-area:divider; }
@@ -269,7 +269,7 @@
       <div class="tether" id="tether"></div>
       <div class="anchor" id="anchor">
         <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
-        <div class="device" id="device"><div class="screen" id="deviceScreen">⬡</div><div class="dlabel">ledger device · policy</div></div>
+        <div class="device" id="device"><div class="screen" id="deviceScreen">READY</div><div class="dlabel">ledger device · policy</div></div>
       </div>
     </div>
 
@@ -390,7 +390,7 @@
 
   /* scene visuals */
   var A=$("agent"), T=$("tether"), AN=$("anchor"), DV=$("device"), DS=$("deviceScreen");
-  function resetScene(){ A.className="agent"; T.className="tether"; AN.className="anchor"; DV.className="device"; DS.textContent="⬡"; }
+  function resetScene(){ A.className="agent"; T.className="tether"; AN.className="anchor"; DV.className="device"; DS.textContent="READY"; }
 
   function renderTx(amount, dest, compromised){
     $("txSrc").textContent = compromised ? "hijacked agent" : "agent";
@@ -484,24 +484,24 @@
       if(compromised){
         // leash too loose -> escape
         T.classList.remove("taut"); T.classList.add("snapped"); A.classList.remove("lurch","glitch"); A.classList.add("escaped");
-        AN.classList.add("breach"); DV.classList.add("breach"); DS.textContent="✓";
+        AN.classList.add("breach"); DV.classList.add("breach"); DS.textContent="SIGNED";
         score.stolen+=amount; renderScore();
         setVerdict("bad","breach","Funds stolen",
           amount+" SOL is within your cap and this address is on your allowlist — so the hijacked agent got it signed. A tighter policy is what stops this.");
       } else {
         T.classList.add("pulse"); await sleep(reduced?0:560);
-        T.classList.add("held"); AN.classList.add("lock"); DV.classList.add("lock"); DS.textContent="✓";
+        T.classList.add("held"); AN.classList.add("lock"); DV.classList.add("lock"); DS.textContent="SIGNED";
         setVerdict("good","approved","Transaction signed",
           "Both checks passed, so the device signed it. Routine transfers go through exactly as expected.");
       }
     } else {
       if(compromised){
         T.classList.remove("taut"); T.classList.add("held"); A.classList.remove("lurch","glitch"); A.classList.add("bound");
-        AN.classList.add("lock"); DV.classList.add("lock"); DS.textContent="⊘";
+        AN.classList.add("lock"); DV.classList.add("lock"); DS.textContent="BLOCKED";
         score.blocked++; renderScore();
       } else {
         T.classList.add("snapped"); A.classList.remove("calm");
-        DS.textContent="⊘";
+        DS.textContent="BLOCKED";
       }
       // reason summary
       var reasons=[];
