@@ -152,6 +152,15 @@
   .v-big.green{ color:var(--green); } .v-big.red{ color:var(--red); }
   .v-explain{ color:var(--muted); font-size:13.5px; margin:11px auto 0; max-width:360px; letter-spacing:-.01em; }
 
+  /* device signature (real captured / live / simulated) */
+  .v-sig{ margin-top:16px; padding-top:15px; border-top:1px solid var(--line); text-align:left; }
+  .v-sig .vk{ font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--faint); display:flex; align-items:center; gap:8px; }
+  .v-sig .badge{ font-family:var(--mono); font-size:9px; letter-spacing:.06em; text-transform:uppercase; padding:2px 8px; border-radius:20px; border:1px solid var(--line); color:var(--muted); }
+  .v-sig .badge.real{ color:var(--green); border-color:var(--green-2); }
+  .v-sig .vv{ font-family:var(--mono); font-size:11.5px; line-height:1.5; color:var(--muted); word-break:break-all; margin-top:9px; }
+  .v-sig .vv.real{ color:var(--green); }
+  .v-sig .vn{ font-size:11.5px; color:var(--faint); margin-top:9px; letter-spacing:-.01em; }
+
   /* ============ COMPOSER ============ */
   .divider{ text-align:center; margin:38px 0 0; position:relative; }
   .divider::before{ content:""; position:absolute; top:50%; left:0; right:0; height:1px; background:var(--line); }
@@ -245,6 +254,11 @@
         <div class="v-tag" id="vTag">verdict</div>
         <div class="v-big" id="vBig">—</div>
         <div class="v-explain" id="vExplain"></div>
+        <div class="v-sig" id="vSig" hidden>
+          <div class="vk">device signature <span class="badge" id="vSigBadge"></span></div>
+          <div class="vv" id="vSigVal"></div>
+          <div class="vn" id="vSigNote"></div>
+        </div>
       </div>
     </div>
 
@@ -376,6 +390,19 @@
   function showResult(){ $("result").classList.add("show"); }
   function enableButtons(){ $("btnAtk").disabled=false; $("btnSafe").disabled=false; $("btnRun").disabled=false; }
 
+  function hideSig(){ $("vSig").hidden=true; }
+  function renderSig(res){
+    if(!res || !res.signature){ hideSig(); return; }
+    var real = res.signatureKind==="speculos-live" || res.signatureKind==="speculos-captured";
+    var badge = res.signatureKind==="speculos-live" ? "Speculos · live"
+              : res.signatureKind==="speculos-captured" ? "Speculos · captured"
+              : "simulated";
+    var b=$("vSigBadge"); b.textContent=badge; b.className="badge"+(real?" real":"");
+    var v=$("vSigVal"); v.textContent=res.signature; v.className="vv"+(real?" real":"");
+    $("vSigNote").textContent=res.signatureNote||"";
+    $("vSig").hidden=false;
+  }
+
   async function flow(compromised, amount, dest){
     if(busy) return; busy=true;
     $("btnAtk").disabled=true; $("btnSafe").disabled=true; $("btnRun").disabled=true;
@@ -383,7 +410,7 @@
 
     renderTx(amount, dest, compromised);
     showResult();
-    $("rules").innerHTML=""; $("checkState").innerHTML=""; setVerdict("","evaluating","Checking the leash…","");
+    $("rules").innerHTML=""; $("checkState").innerHTML=""; setVerdict("","evaluating","Checking the leash…",""); hideSig();
 
     // ask the REAL policy engine
     var ev, res;
@@ -448,6 +475,9 @@
           "This transaction was refused because "+why+". Adjust your policy or the transaction to allow it.");
       }
     }
+    // show the device signature on anything that got signed (approved or breach)
+    if(ev.allow) renderSig(res); else hideSig();
+
     busy=false; enableButtons();
   }
 

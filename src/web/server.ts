@@ -20,6 +20,13 @@ const PORT = Number(process.env.PORT ?? 3000);
 const PUBLIC_DIR = resolve(process.cwd(), "public");
 const config = loadConfig();
 
+// A real ed25519 signature captured from Speculos at dev/build time. Speculos
+// can't run on a typical public host, so when the live signer is the mock we
+// display this captured-real signature instead, clearly labelled. Paste yours
+// (base58) into SPECULOS_SIGNATURE; see docs/speculos.md + DEPLOY.md.
+const CAPTURED_SIGNATURE = (process.env.SPECULOS_SIGNATURE ?? "").trim();
+const CAPTURED_SIGNATURE_NOTE = (process.env.SPECULOS_SIGNATURE_NOTE ?? "").trim();
+
 // One signer (and one device session) reused across requests.
 let signerPromise: Promise<LeashSigner> | null = null;
 function getSigner(): Promise<LeashSigner> {
@@ -82,13 +89,35 @@ async function handleRun(body: RunRequest) {
   let signature: string | null = null;
   let deviceInvoked = false;
   let signerKind: LeashSigner["kind"] | null = null;
+  // How to label the signature in the UI: a live device sig, a real one captured
+  // from Speculos earlier, or the simulated mock sig.
+  let signatureKind: "speculos-live" | "speculos-captured" | "mock" | null = null;
+  let signatureNote = "";
+
   if (evaluation.decision === "ALLOW") {
     const signer = await getSigner();
     const from = (await signer.getAddress()).address;
     const message = buildTransferMessage(intent, from);
-    signature = (await signer.signTransaction(message)).signatureBase58;
+    const liveSig = (await signer.signTransaction(message)).signatureBase58;
     deviceInvoked = true;
     signerKind = signer.kind;
+
+    if (signer.kind === "speculos") {
+      signature = liveSig;
+      signatureKind = "speculos-live";
+      signatureNote = "Signed live on the Speculos-emulated Ledger device.";
+    } else if (CAPTURED_SIGNATURE) {
+      signature = CAPTURED_SIGNATURE;
+      signatureKind = "speculos-captured";
+      signatureNote =
+        CAPTURED_SIGNATURE_NOTE ||
+        "Real ed25519 signature captured from Speculos at dev/build time (sample transfer). " +
+          "The live signer on this host is the mock.";
+    } else {
+      signature = liveSig;
+      signatureKind = "mock";
+      signatureNote = "Simulated signature — run against Speculos for a real one.";
+    }
   }
 
   return {
@@ -97,6 +126,8 @@ async function handleRun(body: RunRequest) {
     verdict: evaluation.decision,
     reason: evaluation.reason,
     signature,
+    signatureKind,
+    signatureNote,
     deviceInvoked,
     signerKind,
   };
