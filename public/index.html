@@ -203,6 +203,36 @@
     .composer .block .field{ margin-bottom:0; }
   }
 
+  /* ============ LAPTOP DASHBOARD ============ */
+  /* Wide screens: widen the column and lay the demo out as a two-column
+     dashboard — the stage visual, demo buttons and verdict on the left, the
+     controls (policy + transaction cards) on the right — so the page is wide
+     and balanced instead of a thin centered strip. Named grid areas let the
+     columns be arranged independently of source order. Below 900px everything
+     falls back to the single stacked column defined above. */
+  @media (min-width:900px){
+    #demo .wrap{
+      max-width:1140px;
+      display:grid;
+      grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);
+      grid-template-areas:
+        "head    head"
+        "stage   controls"
+        "cta     controls"
+        "result  controls"
+        "divider controls";
+      column-gap:44px;
+      align-content:start;
+      align-items:start;
+    }
+    #demo .sec-head{ grid-area:head; }
+    #demo .stage{ grid-area:stage; }
+    #demo .cta{ grid-area:cta; }
+    #demo #result{ grid-area:result; }
+    #demo .divider{ grid-area:divider; }
+    #demo .composer{ grid-area:controls; align-self:start; margin-top:0; }
+  }
+
   @media (prefers-reduced-motion: reduce){ html{ scroll-behavior:auto; } *{ animation:none !important; transition:none !important; } .fade{ opacity:1; transform:none; } #result{ transition:none; } }
 </style>
 </head>
