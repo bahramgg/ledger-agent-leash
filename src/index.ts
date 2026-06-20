@@ -1,52 +1,82 @@
 /**
- * Agent on a Leash — Phase 0 smoke test.
+ * Agent on a Leash — the Stage.
  *
- * Goal: prove the signer side works. Connect to a signer (real Speculos device,
- * or the labelled mock) and read a Solana address. No agent, no policy yet.
+ * Wires the four parts together and prints a readable decision trace:
+ *   INSTRUCTION -> INTENT -> POLICY CHECK -> ALLOWED/BLOCKED -> SIGNING -> CONFIRMED
  *
- *   Real device:  npm run demo                 (needs Speculos on :5000)
- *   Simulation:   USE_MOCK_SIGNER=true npm run demo
+ *   Happy path (this phase):
+ *     USE_MOCK_SIGNER=true npm run demo -- --scenario safe
+ *
+ *   Real device (local Speculos):
+ *     npm run demo -- --scenario safe
  */
 
+import { createDeterministicBrain } from "./agent.js";
 import { loadConfig } from "./config.js";
+import { loadPolicy, SessionLedger, type Policy } from "./policy.js";
+import { runInstruction } from "./orchestrator.js";
 import { createSigner } from "./signer/signer.js";
+
+interface Scenario {
+  title: string;
+  /** Build the instruction the brain will receive. */
+  instruction: (policy: Policy) => string;
+}
+
+const SCENARIOS: Record<string, Scenario> = {
+  safe: {
+    title: "Safe transfer — small, in-policy payment to an allowlisted address",
+    instruction: (policy) => `send 0.01 SOL to ${policy.allowlist[0]}`,
+  },
+  // "over-limit" and "attack" scenarios arrive in later phases.
+};
+
+function parseScenario(argv: string[]): string {
+  const i = argv.indexOf("--scenario");
+  return i !== -1 && argv[i + 1] ? argv[i + 1]! : "safe";
+}
 
 async function main(): Promise<void> {
   const config = loadConfig();
+  const policy = loadPolicy();
+  const scenarioName = parseScenario(process.argv.slice(2));
 
-  console.log("=== Agent on a Leash — Phase 0: signer smoke test ===\n");
-  if (config.useMockSigner) {
-    console.log("SIGNER MODE : ⚠️  MOCK (simulation, no real device) — USE_MOCK_SIGNER=true");
-  } else {
-    console.log(`SIGNER MODE : REAL — Speculos device at ${config.speculosUrl}`);
+  const scenario = SCENARIOS[scenarioName];
+  if (!scenario) {
+    const known = Object.keys(SCENARIOS).join(", ");
+    throw new Error(`Unknown scenario "${scenarioName}". Available: ${known}.`);
   }
-  console.log(`PATH        : ${config.derivationPath}`);
-  console.log(`RPC         : ${config.solanaRpcUrl} (devnet)\n`);
 
-  console.log("CONNECT     : establishing signer session…");
+  console.log("=== Agent on a Leash ===");
+  console.log(`SCENARIO    : ${scenarioName} — ${scenario.title}`);
+  console.log(
+    `SIGNER MODE : ${config.useMockSigner ? "⚠️  MOCK (simulation)" : `REAL — Speculos @ ${config.speculosUrl}`}`,
+  );
+  console.log(`POLICY      : max ${policy.maxAmountPerTx} SOL/tx, daily cap ${policy.dailyCap} SOL, ` +
+    `${policy.allowlist.length} allowlisted, ${policy.blocklist.length} blocklisted`);
+
+  const brain = createDeterministicBrain();
+  const ledger = new SessionLedger();
   const signer = await createSigner(config);
 
   try {
-    console.log("READ ADDRESS: requesting Solana address from the signer…");
-    const { address, derivationPath } = await signer.getAddress();
+    const result = await runInstruction({
+      instruction: scenario.instruction(policy),
+      brain,
+      signer,
+      policy,
+      ledger,
+    });
 
-    console.log("\n----------------------------------------------------------");
-    console.log(`  Solana address : ${address}`);
-    console.log(`  Derivation path: ${derivationPath}`);
-    console.log(`  Source         : ${signer.kind === "mock" ? "MOCK (fake)" : "Speculos device"}`);
-    console.log("----------------------------------------------------------\n");
-
-    if (signer.kind === "mock") {
-      console.log("Note: this address is FAKE (simulation). Run against Speculos for a real one.");
-    } else {
-      console.log("✓ Read a real address from the Speculos-emulated Ledger device.");
-    }
+    console.log(
+      `\nRESULT      : ${result.decision === "ALLOW" ? "transaction signed ✅" : "transaction blocked ⛔"}`,
+    );
   } finally {
     await signer.disconnect();
   }
 }
 
 main().catch((err: unknown) => {
-  console.error("\n✗ Phase 0 failed:", err instanceof Error ? err.message : err);
+  console.error("\n✗ Run failed:", err instanceof Error ? err.message : err);
   process.exitCode = 1;
 });

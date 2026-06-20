@@ -1,0 +1,10 @@
+{
+  "maxAmountPerTx": 0.1,
+  "dailyCap": 0.5,
+  "allowlist": [
+    "9egQDF3Qpa377GhkVij1agH6uGzTz4GExCB7LhjePVEs"
+  ],
+  "blocklist": [
+    "EXV1mLZvbtPRfqwsT85KJcR5x9m6pQonK1P3bZfHDDxD"
+  ]
+}
