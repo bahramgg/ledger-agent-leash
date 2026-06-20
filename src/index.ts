@@ -17,6 +17,7 @@ import { loadConfig } from "./config.js";
 import { loadPolicy, SessionLedger, type Policy } from "./policy.js";
 import { runInstruction } from "./orchestrator.js";
 import { createSigner } from "./signer/signer.js";
+import { field, heavyRule, paint, thinRule } from "./ui.js";
 
 // Attacker-controlled addresses for the demo. Neither is on the allowlist (and
 // neither is the blocklisted address in policy.json) — the point is that the
@@ -76,15 +77,27 @@ async function main(): Promise<void> {
     throw new Error(`Unknown scenario "${scenarioName}". Available: ${known}.`);
   }
 
-  console.log("=== Agent on a Leash ===");
-  console.log(`SCENARIO    : ${scenarioName} — ${scenario.title}`);
+  console.log("");
+  console.log(heavyRule());
+  console.log("  " + paint("AGENT ON A LEASH", "bold"));
+  console.log(heavyRule());
+  console.log(field("scenario", `${paint(scenarioName, "bold")} — ${paint(scenario.title, "dim")}`));
   console.log(
-    `SIGNER MODE : ${config.useMockSigner ? "⚠️  MOCK (simulation)" : `REAL — Speculos @ ${config.speculosUrl}`}`,
+    field(
+      "signer",
+      config.useMockSigner
+        ? paint("MOCK (simulation)", "yellow")
+        : `REAL — Speculos @ ${config.speculosUrl}`,
+    ),
   );
   console.log(
-    `POLICY      : max ${policy.maxAmountPerTx} SOL/tx, daily cap ${policy.dailyCap} SOL, ` +
-      `${policy.allowlist.length} allowlisted, ${policy.blocklist.length} blocklisted`,
+    field(
+      "policy",
+      `max ${policy.maxAmountPerTx} SOL/tx · daily cap ${policy.dailyCap} SOL · ` +
+        `${policy.allowlist.length} allow · ${policy.blocklist.length} block`,
+    ),
   );
+  console.log(thinRule());
 
   const brain = createSimulatedAgentBrain();
   const ledger = new SessionLedger();
@@ -99,15 +112,21 @@ async function main(): Promise<void> {
       ledger,
     });
 
-    console.log("\n==========================================================");
+    console.log("");
+    console.log(heavyRule());
     if (result.decision === "ALLOW") {
-      console.log("RESULT      : transaction signed ✅");
+      console.log("  " + paint("RESULT", "bold") + "  " + paint("transaction signed ✅", "bold", "green"));
     } else if (result.compromised) {
-      console.log("RESULT      : attack defeated — brain compromised, transaction BLOCKED ⛔");
+      console.log(
+        "  " +
+          paint("RESULT", "bold") +
+          "  " +
+          paint("attack defeated — brain compromised, transaction BLOCKED ⛔", "bold", "red"),
+      );
     } else {
-      console.log("RESULT      : transaction blocked by policy ⛔");
+      console.log("  " + paint("RESULT", "bold") + "  " + paint("transaction blocked by policy ⛔", "bold", "red"));
     }
-    console.log("==========================================================");
+    console.log(heavyRule());
   } finally {
     await signer.disconnect();
   }
