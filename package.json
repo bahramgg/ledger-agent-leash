@@ -14,6 +14,7 @@
     "typecheck": "tsc --noEmit",
     "test": "esbuild src/policy.test.ts --bundle --platform=node --format=cjs --outfile=dist/policy.test.cjs --log-level=error && node --test dist/policy.test.cjs",
     "demo": "npm run build && node --no-deprecation dist/agent.cjs",
+    "web": "esbuild src/web/server.ts --bundle --platform=node --format=cjs --conditions=import --target=node20 --outfile=dist/server.cjs --log-level=error && node --no-deprecation dist/server.cjs",
     "start": "node --no-deprecation dist/agent.cjs"
   },
   "keywords": [

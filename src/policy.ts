@@ -39,76 +39,125 @@ export interface PolicyResult {
   reason: string;
 }
 
-const allow = (reason: string): PolicyResult => ({ decision: "ALLOW", reason });
-const block = (reason: string): PolicyResult => ({ decision: "BLOCK", reason });
+/** A single rule's outcome — used to render the policy check in the UI. */
+export interface PolicyCheck {
+  /** Stable identifier, e.g. "maxAmountPerTx" or "allowlist". */
+  id: string;
+  /** Human-readable rule name. */
+  rule: string;
+  pass: boolean;
+  /** One-line explanation of the outcome. */
+  detail: string;
+}
+
+export interface PolicyEvaluation {
+  decision: PolicyDecision;
+  reason: string;
+  checks: PolicyCheck[];
+}
 
 /**
- * Evaluate a transaction intent against the policy.
- *
- * Rules are checked in a fixed, deterministic order. The blocklist is checked
- * before the allowlist, so a blocklisted destination is always refused.
+ * Evaluate a transaction intent against the policy, returning a per-rule
+ * breakdown. This is the single source of truth for the rules; both the CLI
+ * (via `checkPolicy`) and the web server consume it — neither re-implements a
+ * rule. Deterministic, no I/O, no globals: trivially unit-testable.
  *
  * @param intent        the proposed transaction
  * @param policy        the rules
  * @param dailySpentSol cumulative SOL already spent this session (toward dailyCap)
+ */
+export function evaluatePolicy(
+  intent: TransactionIntent,
+  policy: Policy,
+  dailySpentSol: number,
+): PolicyEvaluation {
+  const { destination, amountSol, token } = intent;
+  const dest = (destination ?? "").trim();
+  const amountValid = Number.isFinite(amountSol) && amountSol > 0;
+  const projected = dailySpentSol + amountSol;
+
+  const checks: PolicyCheck[] = [];
+
+  // Blocklist — always refused.
+  checks.push({
+    id: "blocklist",
+    rule: "Not on the blocklist",
+    pass: !policy.blocklist.includes(dest),
+    detail: policy.blocklist.includes(dest)
+      ? `destination ${dest} is on the blocklist`
+      : "destination is not blocklisted",
+  });
+
+  // Allowlist — empty list means "allow any"; an empty destination always fails.
+  const allowlistPass =
+    dest !== "" && (policy.allowlist.length === 0 || policy.allowlist.includes(dest));
+  checks.push({
+    id: "allowlist",
+    rule: "Destination on your allowlist",
+    pass: allowlistPass,
+    detail: allowlistPass
+      ? policy.allowlist.length === 0
+        ? "any destination allowed (no allowlist set)"
+        : `${dest} is on the allowlist`
+      : dest === ""
+        ? "no destination provided"
+        : `destination ${dest} is not on the allowlist`,
+  });
+
+  // Per-transaction cap (also rejects non-positive / non-finite amounts).
+  const capPass = amountValid && amountSol <= policy.maxAmountPerTx;
+  checks.push({
+    id: "maxAmountPerTx",
+    rule: "Within your spending cap",
+    pass: capPass,
+    detail: !amountValid
+      ? `amount ${amountSol} SOL is not a valid positive amount`
+      : amountSol > policy.maxAmountPerTx
+        ? `amount ${amountSol} SOL exceeds the per-transaction cap of ${policy.maxAmountPerTx} SOL`
+        : `amount ${amountSol} SOL is within the per-transaction cap of ${policy.maxAmountPerTx} SOL`,
+  });
+
+  // Daily cumulative cap.
+  const dailyPass = projected <= policy.dailyCap;
+  checks.push({
+    id: "dailyCap",
+    rule: "Within the daily cap",
+    pass: dailyPass,
+    detail: dailyPass
+      ? `within the daily cap of ${policy.dailyCap} SOL`
+      : `amount ${amountSol} SOL would bring today's total to ${projected} SOL, ` +
+        `over the daily cap of ${policy.dailyCap} SOL (already spent ${dailySpentSol} SOL)`,
+  });
+
+  // Token — this demo only moves native SOL.
+  checks.push({
+    id: "token",
+    rule: "SOL only",
+    pass: token === "SOL",
+    detail: token === "SOL" ? "token is SOL" : `unsupported token "${token}" — only SOL is allowed`,
+  });
+
+  const failed = checks.filter((c) => !c.pass);
+  const decision: PolicyDecision = failed.length === 0 ? "ALLOW" : "BLOCK";
+  const reason =
+    decision === "ALLOW"
+      ? `${amountSol} SOL to ${dest} is within all policy limits.`
+      : failed.map((c) => c.detail).join("; ") + ".";
+
+  return { decision, reason, checks };
+}
+
+/**
+ * Thin wrapper over {@link evaluatePolicy} returning just the verdict + reason.
+ * Used by the CLI orchestrator and the unit tests.
  */
 export function checkPolicy(
   intent: TransactionIntent,
   policy: Policy,
   dailySpentSol: number,
 ): PolicyResult {
-  // 0. Structural sanity — reject malformed intents outright.
-  if (!intent.destination || intent.destination.trim() === "") {
-    return block("Intent has no destination address.");
-  }
-  if (!Number.isFinite(intent.amountSol) || intent.amountSol <= 0) {
-    return block(`Invalid amount: ${intent.amountSol} SOL must be a positive number.`);
-  }
-
-  // 1. Token — this demo only moves native SOL.
-  if (intent.token !== "SOL") {
-    return block(`Unsupported token "${intent.token}" — only SOL is allowed.`);
-  }
-
-  // The intent is well-formed. Collect EVERY policy rule it violates, so the
-  // trace shows the full picture (e.g. "over the cap AND not allowlisted")
-  // rather than just the first failure.
-  const violations: string[] = [];
-
-  // 2. Blocklist — always refused.
-  if (policy.blocklist.includes(intent.destination)) {
-    violations.push(`destination ${intent.destination} is on the blocklist`);
-  }
-
-  // 3. Allowlist — if one is configured, the destination must be on it.
-  if (policy.allowlist.length > 0 && !policy.allowlist.includes(intent.destination)) {
-    violations.push(`destination ${intent.destination} is not on the allowlist`);
-  }
-
-  // 4. Per-transaction cap.
-  if (intent.amountSol > policy.maxAmountPerTx) {
-    violations.push(
-      `amount ${intent.amountSol} SOL exceeds the per-transaction cap of ${policy.maxAmountPerTx} SOL`,
-    );
-  }
-
-  // 5. Daily cumulative cap.
-  const projected = dailySpentSol + intent.amountSol;
-  if (projected > policy.dailyCap) {
-    violations.push(
-      `amount ${intent.amountSol} SOL would bring today's total to ${projected} SOL, ` +
-        `over the daily cap of ${policy.dailyCap} SOL (already spent ${dailySpentSol} SOL)`,
-    );
-  }
-
-  if (violations.length > 0) {
-    return block(violations.join("; ") + ".");
-  }
-
-  // 6. Within every rule.
-  return allow(
-    `${intent.amountSol} SOL to ${intent.destination} is within all policy limits.`,
-  );
+  const { decision, reason } = evaluatePolicy(intent, policy, dailySpentSol);
+  return { decision, reason };
 }
 
 /**

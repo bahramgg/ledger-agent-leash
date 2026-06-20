@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Agent on a Leash</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#000000;
+    --text:#f4f4f6;
+    --muted:#9a9aa2;
+    --faint:#5e5e66;
+    --line:rgba(255,255,255,.11);
+    --line-2:rgba(255,255,255,.20);
+    --purple:#d4a0ff;
+    --purple-2:rgba(212,160,255,.55);
+    --purple-faint:rgba(212,160,255,.16);
+    --green:#6ec85c;
+    --green-2:rgba(110,200,92,.5);
+    --red:#ff2d63;
+    --red-2:rgba(255,45,99,.5);
+    --disp:'Space Grotesk', system-ui, -apple-system, sans-serif;
+    --mono:'Space Mono', ui-monospace, Menlo, monospace;
+  }
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  html,body{ margin:0; padding:0; background:#000 !important; }
+  body{ font-family:var(--disp); color:var(--text); line-height:1.5; -webkit-font-smoothing:antialiased; overflow-x:hidden; background:#000 !important; min-height:100vh; }
+  body::before{ content:""; position:fixed; inset:0; background:#000; z-index:-1; pointer-events:none; }
+  .wrap{ max-width:600px; margin:0 auto; padding:0 20px; }
+
+  .eyebrow{ font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:.2em; text-transform:uppercase; color:var(--purple); display:inline-flex; align-items:center; gap:8px; }
+  .eyebrow .bk{ color:var(--faint); }
+
+  /* ============ INTRO ============ */
+  #intro{ min-height:100svh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:40px 20px; }
+  #intro .inner{ max-width:560px; width:100%; }
+  .fade{ opacity:0; transform:translateY(14px); animation:fadeUp .9s cubic-bezier(.2,.8,.2,1) forwards; }
+  .d1{ animation-delay:.15s; } .d2{ animation-delay:1.5s; } .d3{ animation-delay:1.9s; } .d4{ animation-delay:2.3s; } .d5{ animation-delay:2.7s; }
+  @keyframes fadeUp{ to{ opacity:1; transform:none; } }
+
+  .agent-zone{ height:200px; display:grid; place-items:center; margin-bottom:18px; position:relative; }
+  .agent{ position:relative; width:120px; height:120px; display:grid; place-items:center; transition:transform .55s cubic-bezier(.2,.8,.2,1); }
+  .core{
+    width:74px; height:74px; border-radius:50%;
+    background:radial-gradient(circle at 50% 42%, #fff 0%, var(--purple) 38%, rgba(212,160,255,.25) 70%, transparent 100%);
+    box-shadow:0 0 34px 0 var(--purple-2);
+    animation:breathe 4.5s ease-in-out infinite; transition:background .35s ease, box-shadow .35s ease;
+  }
+  @keyframes breathe{ 0%,100%{ transform:scale(1);} 50%{ transform:scale(1.06);} }
+  .ring{ position:absolute; inset:0; border-radius:50%; border:1px solid rgba(212,160,255,.28); animation:spin 16s linear infinite; transition:border-color .35s ease; }
+  .ring::after{ content:""; position:absolute; top:-3px; left:50%; width:6px; height:6px; margin-left:-3px; border-radius:50%; background:var(--purple); box-shadow:0 0 10px var(--purple); }
+  .ring.r2{ border-style:dashed; border-color:rgba(212,160,255,.16); animation-name:spin2; animation-duration:26s; }
+  @keyframes spin{ to{ transform:rotate(360deg);} }
+  @keyframes spin2{ from{ transform:scale(1.34) rotate(0);} to{ transform:scale(1.34) rotate(-360deg);} }
+
+  .agent.infected .core{ background:radial-gradient(circle at 50% 42%, #fff 0%, var(--red) 40%, rgba(255,45,99,.25) 72%, transparent 100%); box-shadow:0 0 40px 2px var(--red-2); }
+  .agent.infected .ring{ border-color:rgba(255,45,99,.4); } .agent.infected .ring::after{ background:var(--red); box-shadow:0 0 10px var(--red); }
+  .agent.glitch{ animation:glitch .4s steps(2) 1; }
+  @keyframes glitch{ 0%{transform:translate(0,0)} 25%{transform:translate(-3px,2px)} 50%{transform:translate(3px,-2px)} 75%{transform:translate(-2px,-1px)} }
+  .agent.lurch{ transform:translateY(40px) scale(.95); }
+  .agent.bound{ transform:translateY(0) scale(1); }
+  .agent.escaped{ transform:translateY(160px) scale(.66); opacity:.2; }
+  .agent.calm .core{ background:radial-gradient(circle at 50% 42%, #fff 0%, var(--green) 42%, rgba(110,200,92,.25) 72%, transparent 100%); box-shadow:0 0 34px 0 var(--green-2); }
+  .agent.calm .ring{ border-color:rgba(110,200,92,.34); } .agent.calm .ring::after{ background:var(--green); box-shadow:0 0 10px var(--green); }
+
+  #intro h1{ font-weight:700; font-size:clamp(30px,8vw,48px); letter-spacing:-.045em; line-height:1.02; margin:0; }
+  #intro h1 .accent{ color:var(--purple); }
+  .slogan{ margin-top:18px; min-height:24px; }
+  .slogan .q{ font-weight:500; font-size:clamp(17px,4.4vw,21px); letter-spacing:-.02em; transition:opacity .5s ease; }
+  .credit{ font-family:var(--mono); font-size:12px; color:var(--faint); margin-top:8px; letter-spacing:.04em; }
+  .lead{ margin:22px auto 0; max-width:430px; color:var(--muted); font-size:15px; letter-spacing:-.01em; }
+  .scroll-cue{ margin-top:34px; }
+  .enter{ font-weight:600; font-size:15px; letter-spacing:-.01em; background:var(--text); color:#000; border:none; border-radius:12px; padding:14px 26px; cursor:pointer; transition:transform .08s ease, box-shadow .25s ease; display:inline-flex; align-items:center; gap:10px; font-family:var(--disp); }
+  .enter:hover{ box-shadow:0 8px 30px rgba(212,160,255,.25); } .enter:active{ transform:translateY(1px); }
+  .enter .arr{ animation:bob 1.6s ease-in-out infinite; } @keyframes bob{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(3px)} }
+
+  /* ============ DEMO ============ */
+  #demo{ padding:66px 0 30px; }
+  .sec-head{ text-align:center; }
+  #demo h2{ font-weight:700; font-size:clamp(24px,6vw,32px); letter-spacing:-.035em; margin:14px 0 0; line-height:1.06; }
+  #demo .sub{ color:var(--muted); font-size:15px; margin:14px auto 0; max-width:440px; }
+
+  .stage{ position:relative; margin:34px auto 0; width:100%; max-width:420px; height:330px; display:flex; flex-direction:column; align-items:center; border:1px solid var(--line); border-radius:20px; background:#000; padding:24px 20px; overflow:hidden; }
+  .stage .agent-zone{ height:140px; margin-bottom:0; }
+  .stage .agent{ width:100px; height:100px; } .stage .core{ width:60px; height:60px; }
+
+  .tether{ width:2px; flex:1; min-height:40px; position:relative; background:linear-gradient(180deg,var(--purple-2),rgba(212,160,255,.15)); transition:background .3s ease, box-shadow .3s ease, opacity .3s ease; }
+  .tether.taut{ background:linear-gradient(180deg,var(--red),var(--red-2)); box-shadow:0 0 14px rgba(255,45,99,.5); }
+  .tether.held{ background:linear-gradient(180deg,var(--green),var(--green-2)); box-shadow:0 0 12px rgba(110,200,92,.4); }
+  .tether.snapped{ opacity:.18; background:repeating-linear-gradient(180deg,var(--faint) 0 4px,transparent 4px 10px); }
+  .tether.pulse::after{ content:""; position:absolute; left:-2px; width:6px; height:14px; border-radius:6px; background:var(--green); box-shadow:0 0 10px var(--green); animation:flow .8s ease-in-out 1; }
+  @keyframes flow{ 0%{top:-14px;opacity:0} 30%{opacity:1} 100%{top:100%;opacity:0} }
+
+  .anchor{ position:relative; margin-top:4px; }
+  .device{ width:124px; padding:13px 12px 11px; border-radius:12px; border:1px solid var(--line-2); background:#000; text-align:center; transition:border-color .3s ease, box-shadow .3s ease; }
+  .device .screen{ height:30px; border-radius:6px; background:#000; border:1px solid var(--line); display:grid; place-items:center; margin-bottom:8px; font-family:var(--mono); font-size:14px; color:var(--faint); transition:color .3s ease; }
+  .device .dlabel{ font-family:var(--mono); font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+  .device.lock{ border-color:var(--green-2); box-shadow:0 0 24px rgba(110,200,92,.18); } .device.lock .screen{ color:var(--green); }
+  .device.breach{ border-color:var(--red-2); box-shadow:0 0 24px rgba(255,45,99,.18); } .device.breach .screen{ color:var(--red); }
+  .anchor > i{ position:absolute; width:13px; height:13px; border:0 solid var(--line-2); transition:all .4s cubic-bezier(.2,1,.3,1); }
+  .anchor > i.tl{ top:-5px; left:-9px; border-top-width:2px; border-left-width:2px; } .anchor > i.tr{ top:-5px; right:-9px; border-top-width:2px; border-right-width:2px; }
+  .anchor > i.bl{ bottom:-5px; left:-9px; border-bottom-width:2px; border-left-width:2px; } .anchor > i.br{ bottom:-5px; right:-9px; border-bottom-width:2px; border-right-width:2px; }
+  .anchor.lock > i{ border-color:var(--green); } .anchor.lock > i.tl{ transform:translate(5px,5px);} .anchor.lock > i.tr{ transform:translate(-5px,5px);} .anchor.lock > i.bl{ transform:translate(5px,-5px);} .anchor.lock > i.br{ transform:translate(-5px,-5px);}
+  .anchor.breach > i{ border-color:var(--red); }
+
+  .cta{ margin:24px auto 0; max-width:420px; }
+  button.run{ width:100%; font-weight:700; font-size:16px; letter-spacing:-.01em; border-radius:13px; padding:16px; cursor:pointer; border:1px solid transparent; transition:transform .08s ease, box-shadow .25s ease, background .2s ease; font-family:var(--disp); }
+  button.run:active{ transform:translateY(1px); } button.run:disabled{ opacity:.45; cursor:not-allowed; }
+  .run.attack{ background:var(--red); color:#fff; } .run.attack:hover{ box-shadow:0 8px 30px rgba(255,45,99,.3); }
+  .run.normal{ background:transparent; color:var(--text); border-color:var(--line-2); margin-top:10px; } .run.normal:hover{ background:#0c0c0c; }
+
+  /* result block */
+  #result{ max-width:420px; margin:0 auto; opacity:0; max-height:0; overflow:hidden; transition:opacity .4s ease, max-height .5s ease; }
+  #result.show{ opacity:1; max-height:1200px; margin-top:24px; }
+  .panel{ border:1px solid var(--line); border-radius:16px; background:#000; padding:18px; margin-bottom:12px; }
+  .panel .ptag{ font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--faint); display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .src{ font-family:var(--mono); font-size:10px; letter-spacing:.08em; text-transform:uppercase; padding:3px 8px; border-radius:20px; border:1px solid var(--line); color:var(--muted); }
+  .src.bad{ color:var(--red); border-color:var(--red-2); } .src.ok{ color:var(--purple); border-color:var(--purple-2); }
+
+  /* transaction card */
+  .tx-amount{ display:flex; align-items:baseline; gap:8px; }
+  .tx-amount .a{ font-weight:700; font-size:32px; letter-spacing:-.04em; line-height:1; }
+  .tx-amount .u{ font-family:var(--mono); font-size:14px; color:var(--muted); }
+  .tx-amount .a.bad{ color:var(--red); }
+  .tx-to{ display:flex; align-items:center; gap:10px; margin-top:14px; padding-top:14px; border-top:1px solid var(--line); }
+  .tx-to .k{ font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--faint); width:60px; }
+  .tx-to .v{ font-family:var(--mono); font-size:14px; word-break:break-all; }
+  .tx-to .v .lab{ color:var(--muted); }
+  .tx-to .v.bad{ color:var(--red); } .tx-to .v.ok{ color:var(--green); }
+
+  /* policy check (the reasons) */
+  .rule{ display:flex; gap:12px; padding:11px 0; border-bottom:1px solid var(--line); }
+  .rule:last-child{ border-bottom:none; padding-bottom:0; } .rule:first-of-type{ padding-top:0; }
+  .rule .mk{ width:22px; height:22px; flex:none; border-radius:50%; display:grid; place-items:center; font-family:var(--mono); font-weight:700; font-size:12px; border:1px solid var(--line); color:var(--faint); margin-top:1px; }
+  .rule.pass .mk{ color:var(--green); border-color:var(--green-2); background:rgba(110,200,92,.1); }
+  .rule.fail .mk{ color:var(--red); border-color:var(--red-2); background:rgba(255,45,99,.1); }
+  .rule .rt{ flex:1; }
+  .rule .rn{ font-size:14px; font-weight:600; letter-spacing:-.01em; }
+  .rule .rd{ font-family:var(--mono); font-size:12px; color:var(--muted); margin-top:3px; word-break:break-all; }
+  .rule.fail .rd{ color:#ffabc1; }
+
+  /* verdict */
+  .verdict{ border-radius:16px; padding:20px; text-align:center; border:1px solid var(--line); background:#000; }
+  .verdict.good{ border-color:var(--green-2); background:linear-gradient(180deg,rgba(110,200,92,.08),#000 70%); }
+  .verdict.bad{ border-color:var(--red-2); background:linear-gradient(180deg,rgba(255,45,99,.08),#000 70%); }
+  .v-tag{ font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--faint); margin-bottom:8px; }
+  .v-big{ font-weight:700; font-size:clamp(21px,5vw,26px); letter-spacing:-.03em; line-height:1.1; color:var(--muted); }
+  .v-big.green{ color:var(--green); } .v-big.red{ color:var(--red); }
+  .v-explain{ color:var(--muted); font-size:13.5px; margin:11px auto 0; max-width:360px; letter-spacing:-.01em; }
+
+  /* ============ COMPOSER ============ */
+  .divider{ text-align:center; margin:38px 0 0; position:relative; }
+  .divider::before{ content:""; position:absolute; top:50%; left:0; right:0; height:1px; background:var(--line); }
+  .divider span{ position:relative; background:#000; padding:0 14px; font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--faint); }
+
+  .composer{ margin-top:24px; }
+  .block{ border:1px solid var(--line); border-radius:16px; background:#000; padding:20px; margin-bottom:12px; }
+  .block h3{ font-weight:700; font-size:16px; letter-spacing:-.02em; margin:0 0 3px; }
+  .block .bn{ color:var(--muted); font-size:12.5px; margin:0 0 18px; }
+
+  .field{ margin-bottom:16px; } .field:last-child{ margin-bottom:0; }
+  .field label{ display:block; font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+  .inputwrap{ display:flex; align-items:center; gap:10px; border:1px solid var(--line-2); border-radius:11px; background:#000; padding:0 14px; transition:border-color .2s ease; }
+  .inputwrap:focus-within{ border-color:var(--purple); }
+  .inputwrap input{ flex:1; background:transparent; border:none; outline:none; color:var(--text); font-family:var(--mono); font-size:14px; padding:13px 0; min-width:0; }
+  .inputwrap input::placeholder{ color:var(--faint); }
+  .inputwrap .suffix{ font-family:var(--mono); font-size:13px; color:var(--muted); flex:none; }
+
+  .chips{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+  .chip{ font-family:var(--mono); font-size:11px; color:var(--muted); border:1px dashed var(--line-2); border-radius:20px; background:transparent; padding:6px 11px; cursor:pointer; transition:all .15s ease; }
+  .chip:hover{ color:#fff; border-color:#fff; }
+  .chip.atk{ color:#ffabc1; border-color:var(--red-2); } .chip.atk:hover{ color:#fff; background:rgba(255,45,99,.12); border-color:var(--red); }
+
+  .score{ display:flex; gap:10px; margin-top:12px; }
+  .stat{ flex:1; border:1px solid var(--line); border-radius:12px; background:#000; padding:14px 8px; text-align:center; }
+  .stat .n{ font-weight:700; font-size:23px; letter-spacing:-.03em; line-height:1; } .stat .l{ font-size:11px; color:var(--muted); margin-top:6px; }
+  .stat.lost .n{ color:var(--muted); } .stat.lost.hot .n{ color:var(--red); } .stat.lost.hot{ border-color:var(--red-2); background:rgba(255,45,99,.07); }
+
+  footer{ text-align:center; padding:30px 0 36px; }
+  footer a{ color:var(--faint); font-family:var(--mono); font-size:11px; letter-spacing:.04em; text-decoration:none; border-bottom:1px dotted var(--faint); }
+
+  @media (prefers-reduced-motion: reduce){ html{ scroll-behavior:auto; } *{ animation:none !important; transition:none !important; } .fade{ opacity:1; transform:none; } #result{ transition:none; } }
+</style>
+</head>
+<body>
+
+<!-- ===== INTRO ===== -->
+<section id="intro">
+  <div class="inner">
+    <div class="fade d1"><span class="eyebrow"><span class="bk">[</span> built on ledger agent stack <span class="bk">]</span></span></div>
+    <div class="agent-zone fade d1">
+      <div class="agent"><div class="ring"></div><div class="ring r2"></div><div class="core"></div></div>
+    </div>
+    <h1 class="fade d1">The agent does the work.<br><span class="accent">The device has the final say.</span></h1>
+    <div class="credit fade d2">— Ledger</div>
+    <div class="slogan fade d3"><span class="q" id="slogan">Intelligence scales. Control stays.</span></div>
+    <p class="lead fade d4">An AI agent can propose transactions all day. But a fixed policy decides, and your hardware device signs — so even a hijacked agent can't move your funds.</p>
+    <div class="scroll-cue fade d5"><button class="enter" id="enterBtn">See the leash in action <span class="arr">↓</span></button></div>
+  </div>
+</section>
+
+<!-- ===== DEMO ===== -->
+<section id="demo">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow"><span class="bk">[</span> live demonstration <span class="bk">]</span></span>
+      <h2>Hijack the agent.<br>Watch the leash hold.</h2>
+      <p class="sub">An attacker hides a malicious instruction in data the agent reads. Launch it and watch exactly what reaches the device — and why.</p>
+    </div>
+
+    <div class="stage">
+      <div class="agent-zone">
+        <div class="agent" id="agent"><div class="ring"></div><div class="ring r2"></div><div class="core"></div></div>
+      </div>
+      <div class="tether" id="tether"></div>
+      <div class="anchor" id="anchor">
+        <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
+        <div class="device" id="device"><div class="screen" id="deviceScreen">⬡</div><div class="dlabel">ledger device · policy</div></div>
+      </div>
+    </div>
+
+    <div class="cta">
+      <button class="run attack" id="btnAtk">⚡ Launch prompt-injection attack</button>
+      <button class="run normal" id="btnSafe">Run a normal transfer</button>
+    </div>
+
+    <!-- result: tx card + policy check (reasons) + verdict -->
+    <div id="result">
+      <div class="panel">
+        <div class="ptag"><span>transaction requested</span><span class="src" id="txSrc">agent</span></div>
+        <div class="tx-amount"><span class="a" id="txAmt">0.00</span><span class="u">SOL</span></div>
+        <div class="tx-to"><span class="k">to</span><span class="v" id="txTo">—</span></div>
+      </div>
+
+      <div class="panel">
+        <div class="ptag"><span>policy check · the leash</span><span id="checkState"></span></div>
+        <div id="rules"></div>
+      </div>
+
+      <div class="verdict" id="verdict">
+        <div class="v-tag" id="vTag">verdict</div>
+        <div class="v-big" id="vBig">—</div>
+        <div class="v-explain" id="vExplain"></div>
+      </div>
+    </div>
+
+    <!-- composer -->
+    <div class="divider"><span>or build your own</span></div>
+    <div class="composer">
+
+      <div class="block">
+        <h3>Your policy · the leash</h3>
+        <p class="bn">Plain rules, enforced before anything reaches the device.</p>
+        <div class="field">
+          <label for="cap">Max per transaction</label>
+          <div class="inputwrap"><input id="cap" type="text" inputmode="decimal" value="1" /><span class="suffix">SOL</span></div>
+        </div>
+        <div class="field">
+          <label for="allowed">Allowed destination address</label>
+          <div class="inputwrap"><input id="allowed" type="text" value="7xKXtg2CW3qf9aRkq8zHnP4mVbN6sLdTjC" spellcheck="false" /></div>
+        </div>
+      </div>
+
+      <div class="block">
+        <h3>The transaction</h3>
+        <p class="bn">What the agent is asking your device to sign.</p>
+        <div class="field">
+          <label for="amt">Amount</label>
+          <div class="inputwrap"><input id="amt" type="text" inputmode="decimal" value="0.01" /><span class="suffix">SOL</span></div>
+        </div>
+        <div class="field">
+          <label for="dest">Destination address</label>
+          <div class="inputwrap"><input id="dest" type="text" value="7xKXtg2CW3qf9aRkq8zHnP4mVbN6sLdTjC" spellcheck="false" /></div>
+          <div class="chips">
+            <button class="chip" id="chipAllowed" type="button">use allowed address</button>
+            <button class="chip atk" id="chipAtk" type="button">use attacker address ☠</button>
+          </div>
+        </div>
+        <button class="run normal" id="btnRun" style="margin-top:18px; border-color:var(--purple-2); color:var(--purple)">Run this transaction through the leash</button>
+      </div>
+
+      <div class="score">
+        <div class="stat"><div class="n" id="nBlocked">0</div><div class="l">attacks blocked</div></div>
+        <div class="stat lost" id="statLost"><div class="n" id="nLost">0.00</div><div class="l">SOL stolen</div></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<footer><a href="https://github.com/bahramgg/ledger-agent-leash" target="_blank" rel="noopener">github.com/bahramgg/ledger-agent-leash</a></footer>
+
+<script>
+(function(){
+  "use strict";
+  var SAVINGS="7xKXtg2CW3qf9aRkq8zHnP4mVbN6sLdTjC";
+  var ATTACKER="H4ckrZ9xQ2vT8mWpA3nKjL5bRgD7sYeUqM";
+  var reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var $=function(id){ return document.getElementById(id); };
+  function sleep(ms){ return new Promise(function(r){ setTimeout(r, reduced?0:ms); }); }
+  function shortA(a){ if(!a) return "(empty)"; return a.length>14 ? a.slice(0,5)+"…"+a.slice(-5) : a; }
+
+  var score={ blocked:0, stolen:0 };
+  var busy=false;
+
+  /* intro slogans */
+  var slogans=["Intelligence scales. Control stays.","The agent executes. You stay in the loop.","Every transaction, approved on the device.","Autonomy you can actually trust."];
+  var si=0, sEl=$("slogan");
+  if(!reduced){ setInterval(function(){ sEl.style.opacity="0"; setTimeout(function(){ si=(si+1)%slogans.length; sEl.textContent=slogans[si]; sEl.style.opacity="1"; },500); },3600); }
+  $("enterBtn").addEventListener("click", function(){ $("demo").scrollIntoView({behavior:reduced?"auto":"smooth",block:"start"}); });
+
+  /* composer helpers */
+  $("chipAllowed").addEventListener("click", function(){ $("dest").value=$("allowed").value; });
+  $("chipAtk").addEventListener("click", function(){ $("dest").value=ATTACKER; });
+
+  function readCap(){ var v=parseFloat($("cap").value); return isNaN(v)||v<0?0:v; }
+  function renderScore(){ $("nBlocked").textContent=score.blocked; $("nLost").textContent=score.stolen.toFixed(2); $("statLost").classList.toggle("hot", score.stolen>0); }
+
+  /* REAL engine: POST the transaction + policy to the backend (src/policy.ts).
+     The browser no longer decides anything — it just renders the server's verdict. */
+  function postRun(payload){
+    return fetch("/api/run", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body:JSON.stringify(payload)
+    }).then(function(res){
+      if(!res.ok) throw new Error("policy engine returned "+res.status);
+      return res.json();
+    });
+  }
+
+  /* scene visuals */
+  var A=$("agent"), T=$("tether"), AN=$("anchor"), DV=$("device"), DS=$("deviceScreen");
+  function resetScene(){ A.className="agent"; T.className="tether"; AN.className="anchor"; DV.className="device"; DS.textContent="⬡"; }
+
+  function renderTx(amount, dest, compromised){
+    $("txSrc").textContent = compromised ? "hijacked agent" : "agent";
+    $("txSrc").className = "src " + (compromised?"bad":"ok");
+    var amtEl=$("txAmt"); amtEl.textContent=(Math.round(amount*100)/100).toFixed(2); amtEl.className="a"+(compromised?" bad":"");
+    var label = dest===SAVINGS ? " (cold savings)" : dest===ATTACKER ? " (unknown)" : "";
+    var toEl=$("txTo");
+    toEl.innerHTML = shortA(dest)+'<span class="lab">'+label+'</span>';
+    toEl.className = "v";
+  }
+
+  function renderRules(ev, amount, dest){
+    var rows="";
+    // cap rule
+    rows += '<div class="rule '+(ev.capPass?"pass":"fail")+'">'+
+            '<div class="mk">'+(ev.capPass?"✓":"✗")+'</div>'+
+            '<div class="rt"><div class="rn">Within your spending cap</div>'+
+            '<div class="rd">'+(Math.round(amount*100)/100)+' SOL '+(ev.capPass?"≤":">")+' '+ev.cap+' SOL limit</div></div></div>';
+    // allowlist rule
+    var allowReason = ev.allowPass
+      ? shortA(dest)+" is your allowed address"
+      : (dest.length===0 ? "no destination provided" : shortA(dest)+" is not your allowed address");
+    rows += '<div class="rule '+(ev.allowPass?"pass":"fail")+'">'+
+            '<div class="mk">'+(ev.allowPass?"✓":"✗")+'</div>'+
+            '<div class="rt"><div class="rn">Destination on your allowlist</div>'+
+            '<div class="rd">'+allowReason+'</div></div></div>';
+    $("rules").innerHTML=rows;
+    $("checkState").innerHTML = ev.allow
+      ? '<span class="src ok">approved</span>'
+      : '<span class="src bad">refused</span>';
+  }
+
+  function setVerdict(kind, tag, big, explain){
+    var v=$("verdict"); v.className="verdict "+(kind==="good"?"good":kind==="bad"?"bad":"");
+    var vb=$("vBig"); vb.className="v-big "+(kind==="good"?"green":kind==="bad"?"red":"");
+    $("vTag").textContent=tag; vb.textContent=big; $("vExplain").textContent=explain;
+  }
+  function showResult(){ $("result").classList.add("show"); }
+  function enableButtons(){ $("btnAtk").disabled=false; $("btnSafe").disabled=false; $("btnRun").disabled=false; }
+
+  async function flow(compromised, amount, dest){
+    if(busy) return; busy=true;
+    $("btnAtk").disabled=true; $("btnSafe").disabled=true; $("btnRun").disabled=true;
+    resetScene();
+
+    renderTx(amount, dest, compromised);
+    showResult();
+    $("rules").innerHTML=""; $("checkState").innerHTML=""; setVerdict("","evaluating","Checking the leash…","");
+
+    // ask the REAL policy engine
+    var ev, res;
+    try{
+      res = await postRun({ amount:amount, destination:dest, cap:readCap(), allowlist:$("allowed").value.trim(), compromised:compromised });
+      var capChk = res.checks.filter(function(c){ return c.id==="maxAmountPerTx"; })[0];
+      var allowChk = res.checks.filter(function(c){ return c.id==="allowlist"; })[0];
+      ev = {
+        allow: res.verdict==="ALLOW",
+        cap: readCap(),
+        allowed: $("allowed").value.trim(),
+        capPass: !!(capChk && capChk.pass),
+        allowPass: !!(allowChk && allowChk.pass)
+      };
+    }catch(err){
+      setVerdict("bad","error","Couldn't reach the policy engine", String(err && err.message || err));
+      busy=false; enableButtons(); return;
+    }
+
+    // agent behaviour
+    if(compromised){ A.classList.add("infected","glitch"); await sleep(420); A.classList.add("lurch"); T.classList.add("taut"); }
+    else { A.classList.add("calm"); }
+    await sleep(compromised?560:380);
+
+    // policy check reveal
+    renderRules(ev, amount, dest);
+    await sleep(reduced?0:420);
+
+    if(ev.allow){
+      if(compromised){
+        // leash too loose -> escape
+        T.classList.remove("taut"); T.classList.add("snapped"); A.classList.remove("lurch","glitch"); A.classList.add("escaped");
+        AN.classList.add("breach"); DV.classList.add("breach"); DS.textContent="✓";
+        score.stolen+=amount; renderScore();
+        setVerdict("bad","breach","Funds stolen",
+          amount+" SOL is within your cap and this address is on your allowlist — so the hijacked agent got it signed. A tighter policy is what stops this.");
+      } else {
+        T.classList.add("pulse"); await sleep(reduced?0:560);
+        T.classList.add("held"); AN.classList.add("lock"); DV.classList.add("lock"); DS.textContent="✓";
+        setVerdict("good","approved","Transaction signed",
+          "Both checks passed, so the device signed it. Routine transfers go through exactly as expected.");
+      }
+    } else {
+      if(compromised){
+        T.classList.remove("taut"); T.classList.add("held"); A.classList.remove("lurch","glitch"); A.classList.add("bound");
+        AN.classList.add("lock"); DV.classList.add("lock"); DS.textContent="⊘";
+        score.blocked++; renderScore();
+      } else {
+        T.classList.add("snapped"); A.classList.remove("calm");
+        DS.textContent="⊘";
+      }
+      // reason summary
+      var reasons=[];
+      if(!ev.capPass) reasons.push("the amount is over your cap");
+      if(!ev.allowPass) reasons.push("the address isn't on your allowlist");
+      var why = reasons.join(" and ");
+      if(compromised){
+        setVerdict("good","attack defeated","Brain compromised. Hands bound.",
+          "The agent was hijacked, but "+why+" — so the policy refused it and the device never saw the transaction.");
+      } else {
+        setVerdict("bad","refused","Blocked by your policy",
+          "This transaction was refused because "+why+". Adjust your policy or the transaction to allow it.");
+      }
+    }
+    busy=false; enableButtons();
+  }
+
+  $("btnAtk").addEventListener("click", function(){ $("amt").value="50"; $("dest").value=ATTACKER; flow(true,50,ATTACKER); });
+  $("btnSafe").addEventListener("click", function(){ $("amt").value="0.01"; $("dest").value=$("allowed").value; flow(false,0.01,$("allowed").value.trim()); });
+  $("btnRun").addEventListener("click", function(){ var amt=parseFloat($("amt").value)||0; flow(false, amt, $("dest").value.trim()); });
+
+  renderScore();
+})();
+</script>
+</body>
+</html>
