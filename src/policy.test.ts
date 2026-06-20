@@ -89,6 +89,17 @@ test("ALLOW: empty allowlist means any (non-blocklisted) destination is allowed"
   assert.equal(r.decision, "ALLOW");
 });
 
+test("BLOCK: over-limit transfer reports BOTH the cap and the allowlist violations", () => {
+  const r = checkPolicy(
+    intent({ amountSol: 50, destination: "AttackerAddr5555555555555555555555555555555" }),
+    POLICY,
+    0,
+  );
+  assert.equal(r.decision, "BLOCK");
+  assert.match(r.reason, /allowlist/);
+  assert.match(r.reason, /per-transaction cap/);
+});
+
 test("SessionLedger accumulates recorded spend", () => {
   const ledger = new SessionLedger();
   assert.equal(ledger.spentSol, 0);

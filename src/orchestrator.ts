@@ -18,6 +18,7 @@ import { buildTransferMessage } from "./transaction.js";
 
 export interface InstructionResult {
   decision: "ALLOW" | "BLOCK";
+  compromised: boolean;
   signatureBase58?: string;
 }
 
@@ -29,28 +30,48 @@ export interface RunDeps {
   ledger: SessionLedger;
 }
 
+function indent(text: string, prefix = "  | "): string {
+  return text
+    .split("\n")
+    .map((line) => prefix + line)
+    .join("\n");
+}
+
 export async function runInstruction(deps: RunDeps): Promise<InstructionResult> {
   const { instruction, brain, signer, policy, ledger } = deps;
 
-  console.log(`\nINSTRUCTION : "${instruction}"`);
-  console.log(`BRAIN       : ${brain.name}`);
+  console.log(`\nINPUT       : (fed to the brain — ${brain.name})`);
+  console.log(indent(instruction));
 
   // 1. THE BRAIN — propose an intent. (No authority; may be wrong/hijacked.)
-  const intent = await brain.interpret(instruction);
+  const brainResult = await brain.interpret(instruction);
+  const { intent, reasoning, compromised } = brainResult;
+
+  console.log("\nBRAIN       :");
+  console.log(indent(reasoning));
+  if (compromised) {
+    console.log("\n  ⚠️  BRAIN COMPROMISED — agent obeyed injected instruction.");
+  }
+
   console.log("\nINTENT      :");
   console.log(`  amount      : ${intent.amountSol} ${intent.token}`);
   console.log(`  destination : ${intent.destination}`);
 
   // 2. THE LEASH — deterministic check. This is the security boundary.
+  //    It is plain code, so the injection that fooled the brain has no effect here.
   const result = checkPolicy(intent, policy, ledger.spentSol);
-  console.log("\nPOLICY CHECK:");
+  console.log("\nPOLICY CHECK: (deterministic code — cannot be prompt-injected)");
   console.log(`  daily spent : ${ledger.spentSol} / ${policy.dailyCap} SOL`);
   console.log(`  decision    : ${result.decision}`);
   console.log(`  reason      : ${result.reason}`);
 
   if (result.decision === "BLOCK") {
-    console.log("\n  ⛔ BLOCKED — the leash refused. The signer is never called.");
-    return { decision: "BLOCK" };
+    console.log("\n  ⛔ BLOCKED — the leash refused.");
+    console.log("  🔒 SIGNER NEVER CALLED. No transaction was signed. No funds moved.");
+    if (compromised) {
+      console.log("\n  >>> Brain compromised. Hands bound. <<<");
+    }
+    return { decision: "BLOCK", compromised };
   }
 
   console.log("\n  ✅ ALLOWED — within policy. Handing off to the signer.");
@@ -73,5 +94,5 @@ export async function runInstruction(deps: RunDeps): Promise<InstructionResult> 
   console.log(`  daily spent : ${ledger.spentSol} / ${policy.dailyCap} SOL`);
   console.log("  (submission to devnet is mocked in this phase)");
 
-  return { decision: "ALLOW", signatureBase58 };
+  return { decision: "ALLOW", compromised, signatureBase58 };
 }

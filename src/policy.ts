@@ -70,30 +70,39 @@ export function checkPolicy(
     return block(`Unsupported token "${intent.token}" — only SOL is allowed.`);
   }
 
-  // 2. Blocklist — always refused, highest precedence.
+  // The intent is well-formed. Collect EVERY policy rule it violates, so the
+  // trace shows the full picture (e.g. "over the cap AND not allowlisted")
+  // rather than just the first failure.
+  const violations: string[] = [];
+
+  // 2. Blocklist — always refused.
   if (policy.blocklist.includes(intent.destination)) {
-    return block(`Destination ${intent.destination} is on the blocklist.`);
+    violations.push(`destination ${intent.destination} is on the blocklist`);
   }
 
   // 3. Allowlist — if one is configured, the destination must be on it.
   if (policy.allowlist.length > 0 && !policy.allowlist.includes(intent.destination)) {
-    return block(`Destination ${intent.destination} is not on the allowlist.`);
+    violations.push(`destination ${intent.destination} is not on the allowlist`);
   }
 
   // 4. Per-transaction cap.
   if (intent.amountSol > policy.maxAmountPerTx) {
-    return block(
-      `Amount ${intent.amountSol} SOL exceeds the per-transaction cap of ${policy.maxAmountPerTx} SOL.`,
+    violations.push(
+      `amount ${intent.amountSol} SOL exceeds the per-transaction cap of ${policy.maxAmountPerTx} SOL`,
     );
   }
 
   // 5. Daily cumulative cap.
   const projected = dailySpentSol + intent.amountSol;
   if (projected > policy.dailyCap) {
-    return block(
-      `Amount ${intent.amountSol} SOL would bring today's total to ${projected} SOL, ` +
-        `over the daily cap of ${policy.dailyCap} SOL (already spent ${dailySpentSol} SOL).`,
+    violations.push(
+      `amount ${intent.amountSol} SOL would bring today's total to ${projected} SOL, ` +
+        `over the daily cap of ${policy.dailyCap} SOL (already spent ${dailySpentSol} SOL)`,
     );
+  }
+
+  if (violations.length > 0) {
+    return block(violations.join("; ") + ".");
   }
 
   // 6. Within every rule.
