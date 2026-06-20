@@ -1,0 +1,40 @@
+{
+  "name": "agent-on-a-leash",
+  "version": "0.1.0",
+  "description": "An autonomous AI agent that can be fully hijacked — and still cannot move your funds. Built on the Ledger Agent Stack (Device Management Kit + Solana Signer Kit + Speculos).",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "dev": "tsx src/index.ts",
+    "demo": "tsx src/index.ts",
+    "start": "node dist/index.js"
+  },
+  "keywords": [
+    "ledger",
+    "solana",
+    "ai-agent",
+    "device-management-kit",
+    "speculos",
+    "security",
+    "prompt-injection"
+  ],
+  "dependencies": {
+    "@ledgerhq/device-management-kit": "^0.7.0",
+    "@ledgerhq/device-signer-kit-solana": "^1.1.0",
+    "@ledgerhq/device-transport-kit-speculos": "^1.0.0",
+    "@ledgerhq/speculos-device-controller": "^1.0.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}
