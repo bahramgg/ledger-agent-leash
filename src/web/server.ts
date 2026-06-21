@@ -202,6 +202,21 @@ const server = createServer(async (req, res) => {
       return;
     }
 
+    if (req.method === "GET" && req.url === "/api/address") {
+      // The real device's own Solana address (its GET_PUBKEY). Lets the dashboard
+      // pre-fill a genuine 32-byte address in real mode so signing "just works".
+      try {
+        const signer = await getSigner();
+        const { address } = await signer.getAddress();
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ address, signerKind: signer.kind }));
+      } catch (err) {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: err instanceof Error ? err.message : String(err) }));
+      }
+      return;
+    }
+
     if (req.method === "GET" && req.url === "/api/mode") {
       // Tells the dashboard whether a live device approval is expected and where
       // to approve it. `real` is true only when the live signer is Speculos.

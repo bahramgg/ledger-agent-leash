@@ -386,6 +386,17 @@
   var REAL_MODE=false, SPECULOS_PUBLIC_URL="";
   fetch("/api/mode").then(function(r){ return r.json(); }).then(function(m){
     REAL_MODE=!!m.real; SPECULOS_PUBLIC_URL=m.speculosPublicUrl||"";
+    // In real mode, pre-fill the allowlist + destination with the device's own
+    // real Solana address so signing uses a genuine 32-byte key out of the box.
+    if(REAL_MODE){
+      fetch("/api/address").then(function(r){ return r.json(); }).then(function(a){
+        if(a && a.address){
+          SAVINGS=a.address;
+          if($("allowed")) $("allowed").value=a.address;
+          if($("dest")) $("dest").value=a.address;
+        }
+      }).catch(function(){ /* leave defaults; user can paste a real address */ });
+    }
   }).catch(function(){ /* default to non-real; the run will still report truthfully */ });
 
   /* intro slogans */
