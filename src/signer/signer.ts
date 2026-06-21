@@ -6,10 +6,12 @@ import type { AppConfig } from "../config.js";
  * Everything above the signer (the agent, the policy gate) deals only in this
  * interface. There are two implementations:
  *
- *   - speculos-signer.ts : the REAL path. Ledger Device Management Kit + Solana
- *                          Signer Kit talking to a Speculos emulated device.
- *   - mock-signer.ts     : a SIMULATION. Clearly labelled, returns fake-but-
- *                          realistic values so the demo runs without hardware.
+ *   - speculos-http-signer.ts : the REAL path (default). Direct Speculos HTTP
+ *                               APDU — robust on hosted Speculos (e.g. Railway).
+ *   - speculos-signer.ts      : the REAL path via the Ledger Device Management
+ *                               Kit + Solana Signer Kit (SPECULOS_SIGNER=dmk).
+ *   - mock-signer.ts          : a SIMULATION. Clearly labelled, returns fake-but-
+ *                               realistic values so the demo runs without hardware.
  *
  * The two never mix. `createSigner` picks exactly one based on config, and uses
  * dynamic import so mock mode never even loads the real DMK code path.
@@ -44,6 +46,10 @@ export async function createSigner(config: AppConfig): Promise<LeashSigner> {
     const { createMockSigner } = await import("./mock-signer.js");
     return createMockSigner(config);
   }
-  const { createSpeculosSigner } = await import("./speculos-signer.js");
-  return createSpeculosSigner(config);
+  if (config.speculosSigner === "dmk") {
+    const { createSpeculosSigner } = await import("./speculos-signer.js");
+    return createSpeculosSigner(config);
+  }
+  const { createSpeculosHttpSigner } = await import("./speculos-http-signer.js");
+  return createSpeculosHttpSigner(config);
 }

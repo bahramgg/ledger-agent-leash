@@ -1,0 +1,7 @@
+# The Solana app binary is provided by you, not committed by default.
+# For the Railway Speculos service to build, commit it explicitly:
+#   git add -f infra/speculos/solana.elf
+# It is a PUBLIC test app binary used with the Speculos TEST seed on devnet —
+# no secrets, no mainnet keys. See docs/railway.md.
+solana.elf
+*.elf

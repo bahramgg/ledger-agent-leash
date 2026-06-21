@@ -9,12 +9,21 @@ drops onto any Node host.
 - **Start:** `npm start` (runs `dist/server.cjs`)
 - **Port:** read from `PORT` (the host sets this; defaults to 3000 locally)
 
+## Want a real, live signature in the cloud?
+
+You can run Speculos itself as a second service and produce a **live** signature
+you approve from your browser. See **[docs/railway.md](docs/railway.md)** for the
+two-service Railway setup (app + Speculos Docker). The rest of this page covers
+the simpler single-service deploy where the live signer is the mock.
+
 ## About Speculos on a public host
 
 Speculos emulates a Ledger by running an ARM app binary under qemu. That's a
-dev/CI tool, **not** something you run on a typical PaaS web dyno. So in
-production the live signer is the **mock** (`USE_MOCK_SIGNER=true`), and the
-policy engine — the part this project is actually about — runs for real.
+dev/CI tool, **not** something a typical single PaaS web dyno runs (but you *can*
+run it as a dedicated Docker service — see [docs/railway.md](docs/railway.md)). In
+the simple single-service deploy the live signer is the **mock**
+(`USE_MOCK_SIGNER=true`), and the policy engine — the part this project is
+actually about — runs for real.
 
 To still show a **real** ed25519 signature, capture one once from Speculos
 locally (see [docs/speculos.md](docs/speculos.md)) and paste it into the

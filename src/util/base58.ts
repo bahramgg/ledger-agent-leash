@@ -36,3 +36,49 @@ export function toBase58(bytes: Uint8Array): string {
   }
   return out;
 }
+
+/** Reverse map from Base58 character to its 0–57 value, built once. */
+const INDEX: Record<string, number> = (() => {
+  const m: Record<string, number> = {};
+  for (let i = 0; i < ALPHABET.length; i++) m[ALPHABET[i]!] = i;
+  return m;
+})();
+
+/**
+ * Minimal Base58 decoder (Bitcoin/Solana alphabet). Inverse of {@link toBase58}.
+ *
+ * Used by the REAL signer path to turn base58 Solana addresses / blockhashes
+ * (the device pubkey, the destination, the recent blockhash) back into the raw
+ * 32-byte values needed to serialize a Solana transfer message. Throws on any
+ * character outside the alphabet so a bad address fails loudly, never silently.
+ */
+export function fromBase58(str: string): Uint8Array {
+  if (str.length === 0) return new Uint8Array(0);
+
+  // Leading "1"s are leading zero bytes.
+  let zeros = 0;
+  while (zeros < str.length && str[zeros] === "1") zeros++;
+
+  const bytes: number[] = [];
+  for (let i = zeros; i < str.length; i++) {
+    const value = INDEX[str[i]!];
+    if (value === undefined) {
+      throw new Error(`Invalid Base58 character "${str[i]}" at position ${i}`);
+    }
+    let carry = value;
+    for (let j = 0; j < bytes.length; j++) {
+      carry += bytes[j]! * 58;
+      bytes[j] = carry & 0xff;
+      carry >>= 8;
+    }
+    while (carry > 0) {
+      bytes.push(carry & 0xff);
+      carry >>= 8;
+    }
+  }
+
+  const out = new Uint8Array(zeros + bytes.length);
+  for (let i = 0; i < bytes.length; i++) out[zeros + bytes.length - 1 - i] = bytes[i]!;
+  return out;
+}
+

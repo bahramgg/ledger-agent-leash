@@ -5,7 +5,12 @@ import { extname, join, normalize, resolve } from "node:path";
 import { loadConfig } from "../config.js";
 import { evaluatePolicy, type Policy, type TransactionIntent } from "../policy.js";
 import { createSigner, type LeashSigner } from "../signer/signer.js";
-import { buildTransferMessage } from "../transaction.js";
+import {
+  buildTransferMessage,
+  buildSolanaTransferMessage,
+  fetchRecentBlockhash,
+  solToLamports,
+} from "../transaction.js";
 
 /**
  * Minimal web server for the dashboard.
@@ -97,7 +102,20 @@ async function handleRun(body: RunRequest) {
   if (evaluation.decision === "ALLOW") {
     const signer = await getSigner();
     const from = (await signer.getAddress()).address;
-    const message = buildTransferMessage(intent, from);
+    // Real path signs the ACTUAL serialized Solana transfer (recent blockhash
+    // from RPC). Mock path keeps the lightweight placeholder bytes.
+    let message: Uint8Array;
+    if (signer.kind === "speculos") {
+      const recentBlockhashBase58 = await fetchRecentBlockhash(config.solanaRpcUrl);
+      message = buildSolanaTransferMessage({
+        fromBase58: from,
+        toBase58: destination,
+        lamports: solToLamports(amount),
+        recentBlockhashBase58,
+      });
+    } else {
+      message = buildTransferMessage(intent, from);
+    }
     const liveSig = (await signer.signTransaction(message)).signatureBase58;
     deviceInvoked = true;
     signerKind = signer.kind;
@@ -181,6 +199,22 @@ const server = createServer(async (req, res) => {
       const result = await handleRun(body);
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify(result));
+      return;
+    }
+
+    if (req.method === "GET" && req.url === "/api/mode") {
+      // Tells the dashboard whether a live device approval is expected and where
+      // to approve it. `real` is true only when the live signer is Speculos.
+      const real = !config.useMockSigner;
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          real,
+          signerImpl: real ? config.speculosSigner : "mock",
+          speculosPublicUrl: config.speculosPublicUrl,
+          hasCapturedSignature: Boolean(CAPTURED_SIGNATURE),
+        }),
+      );
       return;
     }
 
