@@ -47,13 +47,19 @@ It is a public test-app binary used with the test seed on devnet — no secrets.
 5. Deploy. Open the public URL — you should see the Speculos web UI with the
    Solana app running on an emulated Nano S+.
 
-### Enable blind signing (after every Speculos redeploy)
+### Clear signing (the default — leave blind signing OFF)
 
-Speculos device **settings reset on every redeploy.** A standard transfer
-usually clear-signs, but if signing is refused (status `0x6a81`/blind-signing
-disabled), open the Speculos web UI → **Solana app → Settings → enable "Blind
-signing" / "Allow unsafe operations"**, then retry. Do this again any time the
-`speculos` service redeploys.
+A plain SOL transfer is **clear-signed**: the device shows `Transfer`, the amount,
+and the recipient, so you approve exactly what you see — **no blind signing
+required.** Keep **Solana app → Settings → Blind signing = NOT Allowed**. This is
+the Ledger-recommended behaviour and matches what the app does for a standard
+`System Program: Transfer`.
+
+Blind signing only enters the picture if a sign is *refused* with status
+`0x6a81` — that means the app couldn't parse the transaction (a malformed message
+or an unusual app build), not a normal transfer. As a last-resort fallback you
+could enable Blind signing, but the right fix is a clear-signable transaction / a
+stable app build. (Speculos device settings reset on every redeploy.)
 
 ---
 
@@ -121,8 +127,10 @@ device is never asked to sign.
 
 - **`Could not reach Speculos at …/apdu`** — `SPECULOS_URL` is wrong or you used
   the internal `*.railway.internal` host (IPv6). Use the public https URL.
-- **Status `0x6a81` / signing refused** — enable **Blind signing** in the
-  Speculos Solana app settings (resets on every Speculos redeploy).
+- **Status `0x6a81` / signing refused** — the app couldn't clear-sign (parse) the
+  transaction. For a standard transfer this shouldn't happen; check the tx is a
+  plain `System Program: Transfer` and the app build is stable. Enabling Blind
+  signing is only a last-resort fallback, not the intended path.
 - **Timed out waiting for approval** — you didn't approve within
   `SPECULOS_SIGN_TIMEOUT_MS`; approve in the Speculos UI, or raise the timeout.
 - **"did not decode to 32 bytes"** — use a real 32-byte base58 address (see

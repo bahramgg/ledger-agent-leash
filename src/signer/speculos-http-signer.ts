@@ -107,10 +107,17 @@ export function createSpeculosHttpSigner(config: AppConfig): LeashSigner {
     if (reply.length < 2) throw new Error("Speculos reply too short for a status word");
     const sw = (reply[reply.length - 2]! << 8) | reply[reply.length - 1]!;
     if (sw !== 0x9000) {
-      throw new Error(
-        `Ledger Solana app rejected the APDU (status 0x${sw.toString(16).padStart(4, "0")}). ` +
-          `If signing, enable "Blind signing" in the Solana app settings and re-approve.`,
-      );
+      const hex = `0x${sw.toString(16).padStart(4, "0")}`;
+      // 0x6985 = user rejected on device; 0x6a81 = couldn't clear-sign/parse the
+      // transaction (a malformed message or unusual app build — NOT normal for a
+      // plain transfer, which clear-signs). Everything else: surface the raw code.
+      let detail = "";
+      if (sw === 0x6985) detail = " The transaction was rejected on the device.";
+      else if (sw === 0x6a81)
+        detail =
+          " The app couldn't clear-sign this transaction (it expected a parseable" +
+          " transfer). This usually means a malformed message or an unusual app build.";
+      throw new Error(`Ledger Solana app returned status ${hex}.${detail}`);
     }
     return reply.slice(0, reply.length - 2);
   }

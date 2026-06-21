@@ -24,7 +24,7 @@ The system is four parts, deliberately separated so the security boundary is str
 
 - The Brain (agent.ts): turns a natural-language instruction into a structured transaction intent. Uses an LLM. This part is allowed to be fooled, that is the point.
 - The Leash (policy.ts): a pure, deterministic function. Takes an intent, returns ALLOW or BLOCK with a reason. No LLM call, ever. Rules live in policy.json: per-transaction cap, destination allowlist, daily cumulative cap, address blocklist.
-- The Signer (signer.ts): built on the Ledger Device Management Kit + Solana Signer Kit, talking to a Speculos emulated device. Only ever receives transactions that already passed the leash.
+- The Signer (signer.ts): talks to a Speculos emulated Ledger and only ever receives transactions that already passed the leash. Two real implementations: the official **Device Management Kit + Solana Signer Kit** path (`speculos-signer.ts`, `SPECULOS_SIGNER=dmk`), and a **direct Speculos HTTP-APDU** path (`speculos-http-signer.ts`, the default) added so it runs reliably on a hosted Speculos (e.g. Railway). Both produce a genuine device signature. It signs a real, serialized Solana `System Program: Transfer`, which the device **clear-signs** (shows amount + recipient) — no blind signing required.
 - The Stage (console): a readable, screen-recordable trace: INTENT, POLICY CHECK, ALLOWED or BLOCKED, SIGNING, CONFIRMED.
 
 Structural invariant: the brain never holds keys and never calls the signer directly. The only path from intent to signature runs through the leash. This is enforced in the module boundaries, so the guarantee survives a fully compromised agent, not just a well-behaved one.
@@ -35,8 +35,8 @@ Structural invariant: the brain never holds keys and never calls the signer dire
 - Chain: Solana devnet (test SOL only, never mainnet, never real keys)
 - Ledger Device Management Kit: @ledgerhq/device-management-kit
 - Solana Signer Kit: @ledgerhq/device-signer-kit-solana
-- Speculos transport: @ledgerhq/device-transport-kit-speculos
-- Speculos device controller: @ledgerhq/speculos-device-controller
+- Speculos transport: @ledgerhq/device-transport-kit-speculos (official DMK path)
+- Hosted-Speculos signer: direct HTTP APDU to Speculos `/apdu` (default; no DMK transport needed)
 - Agent reasoning: an LLM accessed via API; the key is read from an environment variable and never committed
 
 ## Getting started
