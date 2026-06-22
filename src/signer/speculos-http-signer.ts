@@ -1,6 +1,6 @@
 import type { AppConfig } from "../config.js";
 import type { LeashSigner, SignerAddress, SignerSignature } from "./signer.js";
-import { fromBase58, toBase58 } from "../util/base58.js";
+import { toBase58 } from "../util/base58.js";
 
 /**
  * REAL signing path — direct Speculos HTTP APDU.
@@ -171,6 +171,3 @@ export function createSpeculosHttpSigner(config: AppConfig): LeashSigner {
     },
   };
 }
-
-// Re-exported for tests / direct use.
-export { fromBase58 };

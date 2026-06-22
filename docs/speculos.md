@@ -59,8 +59,7 @@ Reading an address (`checkOnDevice=false`, the default) needs no button press. B
 **signing requires approving on the device screen.** `speculos/automation.json`
 drives the buttons for you — it navigates right and presses both buttons on any
 "approve / sign / confirm" screen. Screen wording varies by app version, so if a
-signature stalls, tweak the regexps there. (The `@ledgerhq/speculos-device-controller`
-dependency can drive the device programmatically too, if you want finer control.)
+signature stalls, tweak the regexps there.
 
 ## Step 2 — Point the app at Speculos
 
