@@ -16,8 +16,13 @@ export interface AppConfig {
   speculosUrl: string;
   /** Public Speculos URL a human opens in the browser to approve (UX link). */
   speculosPublicUrl: string;
-  /** Which real implementation to use: "http" (direct APDU) or "dmk" (kits). */
-  speculosSigner: "http" | "dmk";
+  /**
+   * Which real implementation to use:
+   *   "dmk"  – official Ledger Device Management Kit + Solana Signer Kit
+   *   "http" – direct Speculos HTTP-APDU bridge
+   *   "auto" – try DMK first, fall back to HTTP only if DMK can't connect
+   */
+  speculosSigner: "http" | "dmk" | "auto";
   /** Per-request timeout (ms) for Speculos calls, incl. waiting on approval. */
   signTimeoutMs: number;
   /** Solana RPC endpoint. Devnet only — never mainnet. */
@@ -47,12 +52,15 @@ export function loadConfig(): AppConfig {
   // Speculos (e.g. Railway), where the DMK transport can't reach an IPv4-only
   // emulator behind an https proxy.
   const explicit = (process.env.SPECULOS_SIGNER ?? "").trim().toLowerCase();
-  let speculosSigner: "http" | "dmk";
-  if (explicit === "dmk" || explicit === "http") {
+  let speculosSigner: "http" | "dmk" | "auto";
+  if (explicit === "dmk" || explicit === "http" || explicit === "auto") {
     speculosSigner = explicit;
   } else {
+    // Local Speculos: use the official DMK directly. Remote/hosted Speculos:
+    // still PREFER DMK (try it against the public https URL) and only fall back
+    // to the HTTP-APDU bridge if the DMK transport can't connect.
     const isLocal = /^https?:\/\/(localhost|127\.0\.0\.1)\b/i.test(speculosUrl);
-    speculosSigner = isLocal ? "dmk" : "http";
+    speculosSigner = isLocal ? "dmk" : "auto";
   }
   return {
     useMockSigner: envFlag(process.env.USE_MOCK_SIGNER, false),

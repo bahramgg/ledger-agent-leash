@@ -46,10 +46,30 @@ export async function createSigner(config: AppConfig): Promise<LeashSigner> {
     const { createMockSigner } = await import("./mock-signer.js");
     return createMockSigner(config);
   }
-  if (config.speculosSigner === "dmk") {
+
+  async function dmk(): Promise<LeashSigner> {
     const { createSpeculosSigner } = await import("./speculos-signer.js");
     return createSpeculosSigner(config);
   }
-  const { createSpeculosHttpSigner } = await import("./speculos-http-signer.js");
-  return createSpeculosHttpSigner(config);
+  async function http(): Promise<LeashSigner> {
+    const { createSpeculosHttpSigner } = await import("./speculos-http-signer.js");
+    return createSpeculosHttpSigner(config);
+  }
+
+  if (config.speculosSigner === "dmk") return dmk();
+  if (config.speculosSigner === "http") return http();
+
+  // "auto": prefer the official Ledger DMK; fall back to the HTTP-APDU bridge
+  // only if the DMK transport can't reach this (remote/hosted) Speculos.
+  try {
+    const signer = await dmk();
+    console.log("Signer: using the Ledger Device Management Kit.");
+    return signer;
+  } catch (err) {
+    console.warn(
+      `Signer: DMK could not connect (${err instanceof Error ? err.message : String(err)}); ` +
+        `falling back to the direct Speculos HTTP-APDU bridge.`,
+    );
+    return http();
+  }
 }
