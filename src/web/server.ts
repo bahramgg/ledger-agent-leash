@@ -246,7 +246,10 @@ const server = createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, () => {
+// Bind explicitly to 0.0.0.0 (IPv4, all interfaces) so the dashboard is reachable
+// from the host on localhost — including WSL2, whose localhost forwarding targets
+// IPv4 and otherwise can't reach a default (IPv6) Node listener.
+server.listen(PORT, "0.0.0.0", () => {
   const mode = config.useMockSigner ? "MOCK signer" : `Speculos @ ${config.speculosUrl}`;
   console.log(`Agent on a Leash — web server on http://localhost:${PORT}  (${mode})`);
 });
