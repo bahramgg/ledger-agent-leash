@@ -7,7 +7,7 @@ import type { AppConfig } from "../config.js";
  * interface. There are two implementations:
  *
  *   - speculos-http-signer.ts : the REAL path (default). Direct Speculos HTTP
- *                               APDU — robust on hosted Speculos (e.g. Railway).
+ *                               APDU — a fallback for a remote/hosted Speculos.
  *   - speculos-signer.ts      : the REAL path via the Ledger Device Management
  *                               Kit + Solana Signer Kit (SPECULOS_SIGNER=dmk).
  *   - mock-signer.ts          : a SIMULATION. Clearly labelled, returns fake-but-

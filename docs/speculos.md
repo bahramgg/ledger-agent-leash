@@ -123,13 +123,3 @@ the leash approves.
   ELF was built for a different model than `SPECULOS_MODEL`.
 - **Port already in use** — pass `SPECULOS_API_PORT=5050` and set
   `SPECULOS_API_URL=http://localhost:5050`.
-
-## Note on this project's cloud sandbox
-
-The hosted build environment for this repo cannot run Speculos with the Solana
-app: container registries' blob CDNs are blocked / rate-limited (no image pull),
-and the app builder image needed to compile an ELF is likewise unreachable. The
-emulator engine installs fine via pip, but without a Solana ELF it can't emulate
-the Solana app. So in the sandbox the web demo uses the mock signer; a **real**
-Speculos signature is produced on a local machine (or any host with Docker + an
-ELF) using the steps above. See `DEPLOY.md` for how this affects deployment.

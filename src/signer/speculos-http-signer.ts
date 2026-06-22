@@ -8,7 +8,7 @@ import { toBase58 } from "../util/base58.js";
  * Instead of the Device Management Kit transport, this talks to the Speculos
  * REST API directly: `POST {SPECULOS_URL}/apdu` with `{"data":"<apduHex>"}`,
  * whose reply hex ends with the status word (0x9000 on success). This is the
- * robust path for hosted Speculos (e.g. Railway), where the DMK kits' transport
+ * robust path for a remote/hosted Speculos, where the DMK kits' transport
  * assumptions don't always hold in a plain Node runtime.
  *
  * It implements exactly the Ledger Solana app APDUs (verified against

@@ -56,8 +56,8 @@ export function loadConfig(): AppConfig {
   // Signer implementation: the official Ledger Device Management Kit is the
   // default. If SPECULOS_SIGNER isn't set explicitly, use DMK for a local
   // Speculos and fall back to the direct HTTP-APDU bridge for a remote/hosted
-  // Speculos (e.g. Railway), where the DMK transport can't reach an IPv4-only
-  // emulator behind an https proxy.
+  // Speculos, where the DMK transport can't reach an IPv4-only emulator behind
+  // an https proxy.
   const explicit = (process.env.SPECULOS_SIGNER ?? "").trim().toLowerCase();
   let speculosSigner: "http" | "dmk" | "auto";
   if (explicit === "dmk" || explicit === "http" || explicit === "auto") {

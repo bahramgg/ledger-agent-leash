@@ -25,10 +25,10 @@ const PORT = Number(process.env.PORT ?? 3000);
 const PUBLIC_DIR = resolve(process.cwd(), "public");
 const config = loadConfig();
 
-// A real ed25519 signature captured from Speculos at dev/build time. Speculos
-// can't run on a typical public host, so when the live signer is the mock we
-// display this captured-real signature instead, clearly labelled. Paste yours
-// (base58) into SPECULOS_SIGNATURE; see docs/speculos.md + DEPLOY.md.
+// Optional: a real ed25519 signature captured from Speculos at dev/build time.
+// When the live signer is the mock, the dashboard shows this captured-real
+// signature instead, clearly labelled. Paste yours (base58) into
+// SPECULOS_SIGNATURE; see docs/speculos.md. Leave empty to show the mock sig.
 const CAPTURED_SIGNATURE = (process.env.SPECULOS_SIGNATURE ?? "").trim();
 const CAPTURED_SIGNATURE_NOTE = (process.env.SPECULOS_SIGNATURE_NOTE ?? "").trim();
 
