@@ -115,6 +115,7 @@
   button.run:active{ transform:translateY(1px); } button.run:disabled{ opacity:.45; cursor:not-allowed; }
   .run.attack{ background:var(--red); color:#fff; } .run.attack:hover{ box-shadow:0 8px 30px rgba(255,45,99,.3); }
   .run.normal{ background:transparent; color:var(--text); border-color:var(--line-2); margin-top:10px; } .run.normal:hover{ background:#0c0c0c; }
+  .run.go{ background:var(--purple); color:#000; border-color:var(--purple); } .run.go:hover{ box-shadow:0 8px 30px rgba(212,160,255,.3); }
 
   /* result block */
   #result{ max-width:420px; margin:0 auto; opacity:0; max-height:0; overflow:hidden; transition:opacity .4s ease, max-height .5s ease; }
@@ -354,7 +355,7 @@
             <button class="chip atk" id="chipAtk" type="button">use attacker address ☠</button>
           </div>
         </div>
-        <button class="run normal" id="btnRun" style="margin-top:18px; border-color:var(--purple-2); color:var(--purple)">Run this transaction through the leash</button>
+        <button class="run go" id="btnRun" style="margin-top:18px">Run this transaction through the leash</button>
       </div>
 
       <div class="score">
