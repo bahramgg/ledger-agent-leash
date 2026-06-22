@@ -4,7 +4,27 @@ By default the demo uses a **mock signer** (`USE_MOCK_SIGNER=true`) so it runs
 anywhere. This guide shows how to run the *same* code against
 [Speculos](https://github.com/LedgerHQ/speculos), Ledger's official device
 emulator, so the signer (`src/signer/speculos-signer.ts`) returns a **real
-ed25519 signature** from the emulated Solana app over the DMK Speculos transport.
+ed25519 signature** from the emulated Solana app over the official Device
+Management Kit, and the device **clear-signs** the transfer (amount + recipient
+shown on its trusted display).
+
+## Quickstart (one command)
+
+With the Docker daemon running and the Solana app ELF at
+`infra/speculos/solana.elf`:
+
+```bash
+npm run dev:local        # Speculos on :5000, dashboard on :3000
+```
+
+This starts Speculos in the background and the dashboard signing through the DMK,
+then stops Speculos on exit. Open `http://localhost:3000`, run a transfer, and
+approve it on the device at `http://localhost:5000`. The rest of this page
+explains the moving parts and the manual setup.
+
+> The DMK Solana ContextModule needs a non-empty `LEDGER_ORIGIN_TOKEN` (a default
+> is preset); it is only used for SPL token clear-signing, not native transfers.
+> Keep **Blind signing OFF** in the app settings so transfers are clear-signed.
 
 > Speculos is an emulator — a faithful stand-in for a physical Ledger so you can
 > run without hardware. It is not a substitute for a real secure element in

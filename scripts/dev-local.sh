@@ -37,9 +37,11 @@ echo "→ Speculos UI : http://localhost:5000   (approve transactions here)"
 echo "→ App         : http://localhost:3000"
 echo
 
+# Signs through the official Ledger DMK (auto: DMK first, HTTP-APDU only if DMK
+# can't connect). Set SPECULOS_DEBUG=true before the command for a full APDU log.
 USE_MOCK_SIGNER=false \
 SPECULOS_URL=http://localhost:5000 \
 SPECULOS_PUBLIC_URL=http://localhost:5000 \
-SPECULOS_SIGNER=auto \
-SPECULOS_DEBUG=true \
+SPECULOS_SIGNER="${SPECULOS_SIGNER:-auto}" \
+SPECULOS_DEBUG="${SPECULOS_DEBUG:-false}" \
 npm run web

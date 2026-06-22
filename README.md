@@ -51,9 +51,15 @@ Requires Node.js 20+.
 You can run the whole demo two ways:
 
 - **Mock mode (no hardware needed).** A clearly-labelled simulated signer stands in for the device, so every scenario runs anywhere — including CI. Set `USE_MOCK_SIGNER=true`. This is the fastest way to see the attack defeated.
-- **Real mode (Speculos).** The signer talks to a running Speculos instance (the official Ledger device emulator) on `http://localhost:5000`. See [docs/speculos.md](docs/speculos.md) for the Docker setup. Leave `USE_MOCK_SIGNER` unset/false.
+- **Real mode (Speculos + DMK).** Sign through the official **Device Management Kit** against a Speculos-emulated Ledger. With the Docker daemon running and the Solana app ELF at `infra/speculos/solana.elf`, one command brings up both the emulator and the dashboard:
 
-To configure your environment, copy `.env.example` to `.env`. (An LLM API key is only needed once the LLM-backed brain is wired in; the scenarios here run deterministically without one.)
+  ```bash
+  npm run dev:local        # Speculos on :5000, dashboard on :3000
+  ```
+
+  Open `http://localhost:3000`, run a transfer, and approve it on the device at `http://localhost:5000` — the Ledger app **clear-signs** it, showing the amount and recipient on its trusted display. See [docs/speculos.md](docs/speculos.md) for details.
+
+To configure your environment, copy `.env.example` to `.env`. (An LLM API key is only needed once the LLM-backed brain is wired in; the scenarios here run deterministically without one. A non-empty `LEDGER_ORIGIN_TOKEN` is preset for the DMK ContextModule; the default is fine for native transfers.)
 
 ## Try the attack yourself
 

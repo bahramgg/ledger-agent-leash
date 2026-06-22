@@ -25,6 +25,13 @@ export interface AppConfig {
   speculosSigner: "http" | "dmk" | "auto";
   /** Per-request timeout (ms) for Speculos calls, incl. waiting on approval. */
   signTimeoutMs: number;
+  /**
+   * Origin token for the DMK Solana ContextModule. Its owner-info datasource
+   * requires a non-empty value at build time; it is only queried for SPL token
+   * clear-signing, never for a native SOL transfer, so any non-empty token lets
+   * DMK connect. Override with LEDGER_ORIGIN_TOKEN if you have a real one.
+   */
+  ledgerOriginToken: string;
   /** Solana RPC endpoint. Devnet only — never mainnet. */
   solanaRpcUrl: string;
   /** Solana derivation path used for every operation in this demo. */
@@ -68,6 +75,7 @@ export function loadConfig(): AppConfig {
     speculosPublicUrl: (process.env.SPECULOS_PUBLIC_URL ?? "").trim(),
     speculosSigner,
     signTimeoutMs: Number(process.env.SPECULOS_SIGN_TIMEOUT_MS ?? 120_000),
+    ledgerOriginToken: (process.env.LEDGER_ORIGIN_TOKEN || "agent-on-a-leash").trim(),
     solanaRpcUrl: process.env.SOLANA_RPC_URL ?? "https://api.devnet.solana.com",
     derivationPath: SOLANA_DERIVATION_PATH,
     checkAddressOnDevice: envFlag(process.env.CHECK_ADDRESS_ON_DEVICE, false),

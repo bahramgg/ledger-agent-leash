@@ -47,19 +47,19 @@ It is a public test-app binary used with the test seed on devnet — no secrets.
 5. Deploy. Open the public URL — you should see the Speculos web UI with the
    Solana app running on an emulated Nano S+.
 
-### Clear signing (the default — leave blind signing OFF)
+### Signing on the hosted deploy (HTTP bridge) vs clear signing locally
 
-A plain SOL transfer is **clear-signed**: the device shows `Transfer`, the amount,
-and the recipient, so you approve exactly what you see — **no blind signing
-required.** Keep **Solana app → Settings → Blind signing = NOT Allowed**. This is
-the Ledger-recommended behaviour and matches what the app does for a standard
-`System Program: Transfer`.
+On Railway the app signs through the **direct HTTP-APDU bridge**, because the DMK
+transport can't reach a remote Speculos behind an https proxy. That still
+produces a real, on-device-approved signature, but whether the device decodes the
+transfer (clear sign) or shows a hash (blind sign) depends on the app build; some
+builds require **Blind signing = Allowed** in the Solana app settings to approve
+(settings reset on every redeploy).
 
-Blind signing only enters the picture if a sign is *refused* with status
-`0x6a81` — that means the app couldn't parse the transaction (a malformed message
-or an unusual app build), not a normal transfer. As a last-resort fallback you
-could enable Blind signing, but the right fix is a clear-signable transaction / a
-stable app build. (Speculos device settings reset on every redeploy.)
+For the full **clear-signing** experience over the official **Device Management
+Kit** — the device showing `Transfer` / amount / recipient on its trusted display
+— run locally with `npm run dev:local` (see [docs/speculos.md](speculos.md)),
+where the DMK connects directly to Speculos.
 
 ---
 

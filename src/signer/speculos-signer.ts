@@ -104,9 +104,8 @@ export async function createSpeculosSigner(config: AppConfig): Promise<LeashSign
     // The Solana signer's ContextModule validates a non-empty origin token at
     // build time (HttpOwnerInfoDataSource throws "origin token is required"
     // otherwise). That datasource is only queried for SPL token clear-signing,
-    // never for a native SOL transfer, so any non-empty token satisfies the
-    // check and lets DMK connect; override with LEDGER_ORIGIN_TOKEN if needed.
-    originToken: process.env.LEDGER_ORIGIN_TOKEN || "agent-on-a-leash",
+    // never for a native SOL transfer, so any non-empty token lets DMK connect.
+    originToken: config.ledgerOriginToken,
   }).build();
 
   return {
