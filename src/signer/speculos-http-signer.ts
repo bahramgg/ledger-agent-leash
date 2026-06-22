@@ -68,6 +68,8 @@ function fromHex(hex: string): Uint8Array {
 export function createSpeculosHttpSigner(config: AppConfig): LeashSigner {
   const base = config.speculosUrl.replace(/\/+$/, "");
   const apduUrl = `${base}/apdu`;
+  // SPECULOS_DEBUG=true logs every APDU request/response to the server console.
+  const debug = process.env.SPECULOS_DEBUG === "true" || process.env.SPECULOS_DEBUG === "1";
 
   /** POST one APDU, return the response payload (status word stripped). */
   async function exchange(apdu: number[]): Promise<Uint8Array> {
@@ -100,6 +102,10 @@ export function createSpeculosHttpSigner(config: AppConfig): LeashSigner {
       throw new Error(`Speculos /apdu returned HTTP ${res.status}`);
     }
     const json = (await res.json()) as { data?: string; error?: string };
+    if (debug) {
+      console.log(`[speculos] APDU > ${toHex(apdu)}`);
+      console.log(`[speculos] APDU < ${json.data ?? "(no data)"}`);
+    }
     if (!json.data) {
       throw new Error(`Speculos /apdu gave no data${json.error ? `: ${json.error}` : ""}`);
     }
@@ -145,6 +151,11 @@ export function createSpeculosHttpSigner(config: AppConfig): LeashSigner {
       payload.set(path, 1);
       payload.set(messageBytes, 1 + path.length);
 
+      if (debug) {
+        console.log(`[speculos] sign message (${messageBytes.length} bytes): ${toHex(messageBytes)}`);
+        console.log(`[speculos] sign payload (${payload.length} bytes): ${toHex(payload)}`);
+      }
+
       // Chunk to APDU_MAX_PAYLOAD with more/extend flags, exactly like the kit.
       let signature: Uint8Array | null = null;
       for (let offset = 0; offset < payload.length; offset += APDU_MAX_PAYLOAD) {
@@ -159,8 +170,18 @@ export function createSpeculosHttpSigner(config: AppConfig): LeashSigner {
       }
 
       if (!signature || signature.length !== SIGNATURE_LEN) {
+        const len = signature ? signature.length : 0;
+        const hex = signature ? toHex(signature) : "";
+        const ascii = signature
+          ? Array.from(signature)
+              .map((b) => (b >= 0x20 && b < 0x7f ? String.fromCharCode(b) : "."))
+              .join("")
+          : "";
+        if (debug) console.error(`[speculos] bad signature: ${len} bytes, raw=0x${hex} ascii="${ascii}"`);
         throw new Error(
-          `Expected a ${SIGNATURE_LEN}-byte signature, got ${signature ? signature.length : 0}.`,
+          `Expected a ${SIGNATURE_LEN}-byte signature but the device returned ${len} bytes ` +
+            `(status 0x9000): raw=0x${hex}${ascii ? ` ascii="${ascii}"` : ""}. ` +
+            `The Solana app returned data instead of a signature for this transaction.`,
         );
       }
       return { signature, signatureBase58: toBase58(signature) };
