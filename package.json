@@ -17,6 +17,7 @@
     "test": "esbuild src/policy.test.ts --bundle --platform=node --format=cjs --outfile=dist/policy.test.cjs --log-level=error && node --test dist/policy.test.cjs",
     "demo": "npm run build:cli && node --no-deprecation dist/agent.cjs",
     "web": "npm run build:web && node --no-deprecation dist/server.cjs",
+    "dev:local": "bash scripts/dev-local.sh",
     "speculos:start": "speculos --model ${SPECULOS_MODEL:-nanosp} --display headless --api-port ${SPECULOS_API_PORT:-5000} --automation file:speculos/automation.json ${SPECULOS_APP:-apps/app.elf}",
     "start": "node --no-deprecation dist/server.cjs"
   },
