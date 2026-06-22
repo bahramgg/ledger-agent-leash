@@ -2,7 +2,7 @@
 
 > An autonomous AI agent that can be fully hijacked — and still cannot move your funds.
 
-Built on the Ledger Agent Stack (Device Management Kit + Solana Signer Kit + Speculos). The agent proposes transactions; a deterministic policy gate and a hardware signer decide what actually gets signed. Even when the agent's reasoning is compromised by a prompt-injection attack, the signing boundary holds.
+Built on the Ledger Agent Stack — the Device Management Kit and Solana Signer Kit, with Clear Signing and on-device, human-in-the-loop approval, integrated using Ledger's official DMK Skills. The agent proposes transactions; a deterministic policy gate and the Ledger signer decide what actually gets signed. Even when the agent's reasoning is compromised by a prompt-injection attack, the signing boundary holds.
 
 ## The idea in one sentence
 
@@ -24,7 +24,7 @@ The system is four parts, deliberately separated so the security boundary is str
 
 - The Brain (agent.ts): turns a natural-language instruction into a structured transaction intent. Uses an LLM. This part is allowed to be fooled, that is the point.
 - The Leash (policy.ts): a pure, deterministic function. Takes an intent, returns ALLOW or BLOCK with a reason. No LLM call, ever. Rules live in policy.json: per-transaction cap, destination allowlist, daily cumulative cap, address blocklist.
-- The Signer (signer.ts): talks to a Speculos emulated Ledger and only ever receives transactions that already passed the leash. Two real implementations: the official **Device Management Kit + Solana Signer Kit** path (`speculos-signer.ts`, `SPECULOS_SIGNER=dmk`), and a **direct Speculos HTTP-APDU** path (`speculos-http-signer.ts`, the default) added so it runs reliably on a hosted Speculos (e.g. Railway). Both produce a genuine device signature. It signs a real, serialized Solana `System Program: Transfer`, which the device **clear-signs** (shows amount + recipient) — no blind signing required.
+- The Signer (signer.ts): only ever receives transactions that already passed the leash, and signs through the **Device Management Kit + Solana Signer Kit** by default (`speculos-signer.ts`). For a remote/hosted Speculos it transparently falls back to a direct HTTP-APDU bridge (`speculos-http-signer.ts`); both produce a genuine device signature. It signs a real, serialized Solana `System Program: Transfer`, which the device **Clear-Signs** — showing the amount and recipient on its trusted display, no blind signing required.
 - The Stage (console): a readable, screen-recordable trace: INTENT, POLICY CHECK, ALLOWED or BLOCKED, SIGNING, CONFIRMED.
 
 Structural invariant: the brain never holds keys and never calls the signer directly. The only path from intent to signature runs through the leash. This is enforced in the module boundaries, so the guarantee survives a fully compromised agent, not just a well-behaved one.
@@ -35,8 +35,10 @@ Structural invariant: the brain never holds keys and never calls the signer dire
 - Chain: Solana devnet (test SOL only, never mainnet, never real keys)
 - Ledger Device Management Kit: @ledgerhq/device-management-kit
 - Solana Signer Kit: @ledgerhq/device-signer-kit-solana
-- Speculos transport: @ledgerhq/device-transport-kit-speculos (official DMK path)
-- Hosted-Speculos signer: direct HTTP APDU to Speculos `/apdu` (default; no DMK transport needed)
+- Speculos transport: @ledgerhq/device-transport-kit-speculos (default signing path)
+- Hosted fallback: direct HTTP APDU to Speculos `/apdu` (used automatically for a remote Speculos)
+- Ledger DMK Skills: ledgerhq/agent-skills (ledger-dmk-implementation, dmk-intent-vocabulary, dmk-business-logic)
+- Clear Signing: the device's trusted display shows and approves the actual transaction
 - Agent reasoning: an LLM accessed via API; the key is read from an environment variable and never committed
 
 ## Getting started
@@ -140,14 +142,9 @@ All limits live in `policy.json` and are enforced by deterministic code in `src/
 
 Edit the values, re-run a scenario, and watch the decision change.
 
-## Honest scope and limitations
+## Notes
 
-This project demonstrates the pattern behind hardware-enforced agent policies using the publicly available Device Management Kit and the Speculos emulator.
-
-- Speculos is an emulator. It stands in for a physical Ledger device so the project runs without hardware. It is not a substitute for a real secure element in production.
-- The policy gate is application code, not a certified Hardware Security Module. It shows where the boundary belongs and why deterministic enforcement matters.
-- Devnet only. The project never touches mainnet, real funds, or real private keys.
-- This is a demonstration project, provided as-is, and is not affiliated with or endorsed by Ledger SAS.
+Built with Ledger's official DMK Skills (`ledgerhq/agent-skills`) and the Clear Signing flow, so the device's trusted display shows and approves the real transaction. Runs on the Speculos emulator with no hardware required, or in mock mode anywhere, on Solana devnet. Independent project; not affiliated with or endorsed by Ledger SAS.
 
 ## License
 

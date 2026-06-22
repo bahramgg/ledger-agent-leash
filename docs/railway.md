@@ -80,7 +80,7 @@ stable app build. (Speculos device settings reset on every redeploy.)
    | `USE_MOCK_SIGNER` | `false` | Turn on the real signer (mock is the default). |
    | `SPECULOS_URL` | `https://<your-speculos>.up.railway.app` | Server-side APDU endpoint. **Use the PUBLIC https URL** — Railway private networking is IPv6 and Speculos binds IPv4 only, so `*.railway.internal` will NOT reach it. |
    | `SPECULOS_PUBLIC_URL` | same public URL | The "open the signer to approve" link shown in the dashboard. |
-   | `SPECULOS_SIGNER` | `http` | Direct `/apdu` path (default). Use `dmk` to try the Ledger kits instead. |
+   | `SPECULOS_SIGNER` | `http` | Optional. The signer auto-selects DMK locally and HTTP for a remote https Speculos, so on Railway it already uses HTTP; set `http` explicitly if you want to be sure. |
    | `SOLANA_RPC_URL` | `https://api.devnet.solana.com` | Devnet only — used to fetch a recent blockhash. |
    | `SPECULOS_SIGN_TIMEOUT_MS` | `120000` | How long a request waits for your approval before timing out. |
 
